@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Tickets in the queue</h2>
+<ul>
+  {% for t in tickets %}
+    <li>Ticket #{{ t.number }}: {{ t.name }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}
