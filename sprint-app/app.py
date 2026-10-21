@@ -1,4 +1,4 @@
-from flask import Flask, abort, render_template
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 
@@ -17,6 +17,19 @@ def ticket(ticket_id):
         if t["number"] == ticket_id:
             return render_template("ticket.html", ticket=t, position=position)
     abort(404)
+
+@app.route("/join", methods=["GET", "POST"])
+def join():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if not name:
+            return render_template("join.html", error="Please enter your name.")
+
+        number = TICKETS[-1]["number"] + 1 if TICKETS else 1
+        TICKETS.append({"number": number, "name": name})
+        return redirect(url_for("ticket", ticket_id=number))
+
+    return render_template("join.html")
 
 @app.route("/hello")
 def hello():
