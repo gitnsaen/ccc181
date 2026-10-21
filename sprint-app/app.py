@@ -2,14 +2,9 @@ from flask import Flask, abort, render_template
 
 app = Flask(__name__)
 
-SERVICES = [
-    {"id": 1, "name": "Consultation"},
-    {"id": 2, "name": "Medical certificate"},
-]
-
 TICKETS = [
-    {"number": 1, "name": "Ana", "email": "ana@school.edu", "service_id": 1, "status": "waiting"},
-    {"number": 2, "name": "Ben", "email": "ben@school.edu", "service_id": 2, "status": "waiting"},
+    {"number": 12, "name": "Ana"},
+    {"number": 14, "name": "Ben"},
 ]
 
 @app.route("/")
