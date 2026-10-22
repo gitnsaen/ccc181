@@ -47,7 +47,7 @@ At our university copy center and print shops, students no longer use USB flash 
 
 | | |
 |---|---|
-| **Name, age** | Mikaela "Mika" Santos, 20 (Fictional composite grounded in student interviews) |
+| **Name, age** | Sammy Bautista, 20 (Fictional composite grounded in student interviews) |
 | **Role / background** | 3rd-year Biology undergraduate; commutes daily; carries heavy course materials and takes back-to-back laboratory courses requiring physical paper submissions. |
 | **Goals** | 1. Reserve her place in the printing queue after sending her document via the shop's Facebook Page or Gmail without being trapped in a physical line.<br>2. Track the exact number of jobs ahead so she knows if she has time to walk to her building or must stay nearby.<br>3. Receive a clear call notification to step up to the counter, pay, and collect her prints right before class. |
 | **Frustrations / pain points** | 1. Physical line lock-in: Stepping out of line to go to the restroom or buy water forfeits your turn, forcing you to the very back of the line.<br>2. Wasted time standing at the counter: Having to stand in a crowded hallway just to prove physical presence while waiting for 8 other people ahead.<br>3. Desperation when running late: Leaving the queue in frustration to hunt for other campus print shops or pleading with friends to print on their behalf. |

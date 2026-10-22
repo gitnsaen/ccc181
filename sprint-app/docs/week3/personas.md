@@ -4,7 +4,7 @@ Grounded in field observation and student/operator interviews conducted at the U
 
 ---
 
-## Mikaela "Mika" Santos, the Person Waiting
+## Sammy Bautista, the Person Waiting
 
 > *"I already sent my lab report PDF to their Facebook page 20 minutes ago, but Kuya said they only open and print your file when you're physically standing right in front of the counter. The line was ten people deep, so I couldn't stay or I'd miss my quiz. I had to leave and ended up begging my blockmate to print it for me."* *(interview)*
 
@@ -20,7 +20,7 @@ Grounded in field observation and student/operator interviews conducted at the U
 
 ### Scenario
 
-It is 8:10 AM. Mika has already emailed her 6-page lab report to the print shop's Gmail. She arrives at the copy center and sees 12 students crowded in line. Instead of standing in line for 25 minutes and risking being late for her 8:30 AM class, Mika opens **sPrint** on her phone. She enters her student ID, chooses "Document Printing (B&W)", references her file name (`Sent via Gmail: Lab_Report_Final.pdf`), checks the "Rush Order" box, and gets Ticket #14 showing "3 print jobs ahead". She walks over to a quiet bench nearby to review her lecture notes. At 8:22 AM, her screen turns green with **"📢 Please proceed to Counter 1 now!"**. She steps up to the counter, Kuya Jun opens her emailed PDF, prints it in 30 seconds, Mika pays, and heads to class on time.
+It is 8:10 AM. Sammy has already emailed her 6-page lab report to the print shop's Gmail. She arrives at the copy center and sees 12 students crowded in line. Instead of standing in line for 25 minutes and risking being late for her 8:30 AM class, Sammy opens **sPrint** on her phone. She enters her student ID, chooses "Document Printing (B&W)", references her file name (`Sent via Gmail: Lab_Report_Final.pdf`), checks the "Rush Order" box, and gets Ticket #14 showing "3 print jobs ahead". She walks over to a quiet bench nearby to review her lecture notes. At 8:22 AM, her screen turns green with **"📢 Please proceed to Counter 1 now!"**. She steps up to the counter, Kuya Jun opens her emailed PDF, prints it in 30 seconds, Sammy pays, and heads to class on time.
 
 ### Top tasks in the app
 
@@ -33,7 +33,7 @@ It is 8:10 AM. Mika has already emailed her 6-page lab report to the print shop'
 
 ### What this means for my interface
 
-1. **Because** Mika waits away from the crowded counter (on benches or in hallways), the ticket status and position count must be massive and unmistakable at a glance.
+1. **Because** Sammy waits away from the crowded counter (on benches or in hallways), the ticket status and position count must be massive and unmistakable at a glance.
 2. **Because** students send files via FB Messenger or Gmail, the form must have a clear "Document / File Reference" field so operators can instantly locate the file in their inbox.
 3. **Because** she cannot constantly refresh while reviewing her notes, the status on My place must poll the server asynchronously and update automatically when she is called.
 
@@ -55,7 +55,7 @@ It is 8:10 AM. Mika has already emailed her 6-page lab report to the print shop'
 
 ### Scenario
 
-During the 8:00 AM rush, Kuya Jun's Facebook Messenger and Gmail tabs are flooded with student documents. Instead of letting students swarm the counter or guessing who arrived first, Kuya Jun checks the **sPrint Operator Dashboard**. He clicks **"📢 Call Next Job"**, which calls Ticket #14 (Mikaela Santos, file: `Sent via Gmail: Lab_Report_Final.pdf`). Within 30 seconds, Mikaela approaches Counter 1 showing Ticket #14 on her phone. Kuya Jun opens her file in Gmail, clicks print, collects the payment, and clicks **Serve** on his dashboard. The transaction is complete, fair, and orderly.
+During the 8:00 AM rush, Kuya Jun's Facebook Messenger and Gmail tabs are flooded with student documents. Instead of letting students swarm the counter or guessing who arrived first, Kuya Jun checks the **sPrint Operator Dashboard**. He clicks **"📢 Call Next Job"**, which calls Ticket #14 (Sammy Bautista, file: `Sent via Gmail: Lab_Report_Final.pdf`). Within 30 seconds, Sammy approaches Counter 1 showing Ticket #14 on her phone. Kuya Jun opens her file in Gmail, clicks print, collects the payment, and clicks **Serve** on his dashboard. The transaction is complete, fair, and orderly.
 
 ### Top tasks in the app
 
@@ -72,3 +72,4 @@ During the 8:00 AM rush, Kuya Jun's Facebook Messenger and Gmail tabs are floode
 1. **Because** Kuya Jun needs to locate the student's file in Messenger or Gmail quickly, the dashboard table must prominently display the document name/reference and student name.
 2. **Because** operators must ensure the customer is present before printing, the "Call" action notifies the student to approach the counter *before* the job is printed and marked "Served".
 3. **Because** students who step away may not return in time, the operator needs a quick "No-Show" button to advance to the next waiting customer without stalling the entire counter.
+
