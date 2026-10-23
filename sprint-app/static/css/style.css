@@ -1,36 +1,257 @@
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  sPrint — Custom Design Tokens
+  Applied by overriding Bootstrap 5 CSS custom properties (:root variables).
+  Bootstrap reads these variables everywhere it sets colours, so changing them
+  here automatically updates buttons, badges, alerts, navbar, etc. without
+  touching individual component class names.
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+:root {
+  /*
+    ── Brand palette ──────────────────────────────────────────────────────────
+    These are OUR custom tokens — not Bootstrap names.
+    We define them once here and reference them in the overrides below.
+    Using separate tokens means we only change a colour in ONE place.
+  */
+
+  /* Foundation / Text — the colour the user specified */
+  --sprint-dark:       #1E2229;
+
+  /* Primary accent — a cool blue that pairs with the deep charcoal */
+  --sprint-primary:    #2D6FD4;
+  --sprint-primary-hover: #245DB8; /* slightly darker for hover state */
+
+  /* Page surface — off-white, avoids harsh pure-white contrast */
+  --sprint-surface:    #F5F6F8;
+
+  /* Muted text — for captions, helper text, placeholders */
+  --sprint-muted:      #5A6275;
+
+  /* Status / semantic colours */
+  --sprint-success:    #1A9E6E;  /* "Done" badge, success alerts */
+  --sprint-warning:    #E8A022;  /* "Called" badge, rush ★ indicator */
+  --sprint-danger:     #D63C3C;  /* Error alerts, validation messages */
+
+  /* Borders and dividers */
+  --sprint-border:     #D1D5DE;
+
+
+  /*
+    ── Bootstrap CSS variable overrides ───────────────────────────────────────
+    Bootstrap 5 reads these --bs-* variables for all of its components.
+    We map our sprint tokens onto Bootstrap's names so every Bootstrap
+    component (navbar, button, badge, alert) automatically uses our palette.
+    Reference: https://getbootstrap.com/docs/5.3/customize/css-variables/
+  */
+
+  /*
+    --bs-primary controls btn-primary, text-primary, bg-primary, border-primary.
+    We set it to our sprint blue and also provide the RGB triplet that Bootstrap
+    needs internally for rgba() calculations (e.g. focus ring opacity).
+  */
+  --bs-primary:        var(--sprint-primary);
+  --bs-primary-rgb:    45, 111, 212;  /* R,G,B of #2D6FD4 */
+
+  /*
+    --bs-dark controls bg-dark, text-dark, navbar-dark, btn-dark.
+    We override it with our deep charcoal so the navbar and footer automatically
+    use #1E2229 without us writing any extra CSS rules.
+  */
+  --bs-dark:           var(--sprint-dark);
+  --bs-dark-rgb:       30, 34, 41;   /* R,G,B of #1E2229 */
+
+  /*
+    --bs-body-bg sets the default page background colour.
+    Using our warm off-white instead of pure white reduces eye fatigue.
+  */
+  --bs-body-bg:        var(--sprint-surface);
+
+  /*
+    --bs-body-color sets the default text colour everywhere on the page.
+    We use our deep charcoal for body text too — provides great contrast
+    against the off-white background (contrast ratio > 12:1, WCAG AAA).
+  */
+  --bs-body-color:     var(--sprint-dark);
+
+  /*
+    --bs-secondary-color is the Bootstrap 5.3 token for muted/helper text
+    (replaces the old text-muted class internals).
+  */
+  --bs-secondary-color: var(--sprint-muted);
+
+  /*
+    --bs-border-color is used by Bootstrap for form inputs, cards, dividers.
+    Our cool gray is slightly cooler-toned than Bootstrap's default #dee2e6.
+  */
+  --bs-border-color:   var(--sprint-border);
+
+  /*
+    Semantic alert / badge colours.
+    Bootstrap reads these for alert-success, badge bg-success, etc.
+  */
+  --bs-success:        var(--sprint-success);
+  --bs-success-rgb:    26, 158, 110;
+  --bs-warning:        var(--sprint-warning);
+  --bs-warning-rgb:    232, 160, 34;
+  --bs-danger:         var(--sprint-danger);
+  --bs-danger-rgb:     214, 60, 60;
+
+  /* Link colour — match our primary blue */
+  --bs-link-color:     var(--sprint-primary);
+  --bs-link-hover-color: var(--sprint-primary-hover);
+}
+
+
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  Layout — sticky footer
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  display:flex + flex-direction:column makes <body> a vertical flex container.
+  min-height:100vh ensures the body always fills the full viewport height.
+  Together these let the footer "stick" to the bottom of the screen even
+  on pages with very little content.
+*/
 body {
-  font-family: sans-serif;
-  margin: 2rem;
-}
-
-/* Join-queue form */
-.button, .join-form button {
-  display: inline-block;
-  background: #008080;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1.2rem;
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.join-form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: 320px;
+  min-height: 100vh;
 }
 
-.join-form input {
-  padding: 0.5rem;
-  border: 1px solid #C9C4B8;
-  border-radius: 6px;
-  font: inherit;
+/*
+  flex:1 tells <main> to grow and fill ALL remaining vertical space between
+  the navbar and the footer.  Anything without flex:1 won't grow.
+*/
+main {
+  flex: 1;
 }
 
-.error {
-  color: #d9534f;
-  font-weight: 600;
+
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  Navbar — tweak Bootstrap's dark navbar with our charcoal
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  Bootstrap's .bg-dark now uses --bs-dark which we've already set to
+  #1E2229, so the background is handled automatically.
+  We add a subtle bottom border to visually separate the nav from page content.
+  1px solid with slight opacity keeps it from being too harsh.
+*/
+.navbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/*
+  The brand name gets our primary blue as its colour so it stands out
+  from the plain white nav links.
+  !important is needed here only because Bootstrap's .navbar-brand sets
+  colour via a specificity-matched rule — this is a deliberate override.
+*/
+.navbar-brand {
+  color: #ffffff !important;
+  letter-spacing: -0.02em; /* tighten the brand wordmark slightly */
+}
+
+/*
+  Active nav link — white text and our primary blue as underline indicator.
+  We use a bottom border instead of a background fill so it looks clean
+  against the dark navbar.
+*/
+.navbar-nav .nav-link.active {
+  color: #ffffff !important;
+  border-bottom: 2px solid var(--sprint-primary);
+}
+
+/*
+  Non-active nav links — slightly transparent white; becomes fully white on hover.
+  Bootstrap already does this partly via .navbar-dark, but we make it explicit.
+*/
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.80);
+  transition: color 0.15s ease;
+}
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+  color: #ffffff;
+}
+
+
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  Buttons — extend Bootstrap's primary button with our colour + hover
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  Bootstrap's .btn-primary already reads --bs-primary for its background.
+  We add our explicit hover/focus override so the darkened shade is correct.
+*/
+.btn-primary {
+  background-color: var(--sprint-primary);
+  border-color:     var(--sprint-primary);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--sprint-primary-hover);
+  border-color:     var(--sprint-primary-hover);
+}
+
+
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  Skip link (accessibility)
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  Bootstrap's .visually-hidden-focusable hides the element off-screen until
+  it receives keyboard focus.  We add a visible focus ring in our primary
+  blue so sighted keyboard users can see it clearly.
+*/
+.skip-link:focus {
+  outline: 3px solid var(--sprint-primary);
+  outline-offset: 4px;
+}
+
+
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  Status badges — refined colours for queue statuses
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  The "called" status uses Bootstrap's .bg-warning which now maps to our
+  --sprint-warning (#E8A022).  We ensure dark text on that yellow background
+  for legibility (light yellow on white is dangerously low contrast).
+  Bootstrap sets text-dark on bg-warning by default in v5.3 — this confirms it.
+*/
+.badge.bg-warning {
+  color: var(--sprint-dark) !important;
+}
+
+
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  Hero section on index page
+  ════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  Give the hero a very subtle gradient background so it's visually separated
+  from the queue list below without needing a card or border.
+  linear-gradient goes from a slightly tinted charcoal-white at the top
+  to the plain surface colour at the bottom.
+*/
+.hero-section {
+  background: linear-gradient(160deg, #eef1f7 0%, var(--sprint-surface) 100%);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
 }

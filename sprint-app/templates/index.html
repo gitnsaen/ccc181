@@ -1,12 +1,147 @@
 {% extends "base.html" %}
 
-{% block content %}
-<p><a class="button" href="{{ url_for('join') }}">Join the queue</a></p>
+{% block title %}sPrint · Campus Print Shop Queue{% endblock %}
 
-<h2>Tickets in the queue</h2>
-<ul>
-  {% for t in tickets %}
-    <li>Ticket #{{ t.number }}: {{ t.name }}</li>
-  {% endfor %}
-</ul>
+{% block content %}
+
+<!--
+  ═══════════════════════════════════════════════════════════════
+  HERO / WELCOME SECTION
+  ═══════════════════════════════════════════════════════════════
+  text-center    → centres all text and inline elements in this div
+  py-5           → padding top + bottom (Bootstrap spacing scale:
+                   5 = 3rem = ~48px) — gives breathing room above
+                   and below the heading
+  We wrap in a <section> with an aria-label so screen reader users
+  can identify this area by its landmark label, not just "section".
+-->
+<section aria-label="Welcome" class="hero-section text-center">
+
+  <!--
+    display-4   → Bootstrap's "display" heading class — larger than a
+                  normal <h1> for a splash / hero look
+    fw-bold     → font-weight: bold
+    mb-3        → margin-bottom 1 rem — space between heading and sub-text
+  -->
+  <h1 class="display-4 fw-bold mb-3">🖨️ sPrint</h1>
+
+  <!--
+    lead    → Bootstrap class that makes a paragraph slightly larger
+              and lighter-weight than body text — good for subtitles
+    mb-4    → margin-bottom 1.5 rem — space before the button
+  -->
+  <p class="lead mb-4">
+    Skip the line — join the campus print shop queue from anywhere
+    and track your position in real time.
+  </p>
+
+  <!--
+    Primary call-to-action button.
+    btn             → base Bootstrap button reset (removes default styles)
+    btn-primary     → filled blue button
+    btn-lg          → larger padding and font size
+    px-5            → extra horizontal padding to make the button wide
+    url_for('join_form') → generates "/join"; uses the function name
+                           we defined in app.py, not a hardcoded path.
+                           If the URL ever changes we only update app.py.
+  -->
+  <a class="btn btn-primary btn-lg px-5" href="{{ url_for('join_form') }}">
+    Join the Queue
+  </a>
+
+</section>
+
+<!--
+  ═══════════════════════════════════════════════════════════════
+  CURRENT QUEUE SNAPSHOT
+  ═══════════════════════════════════════════════════════════════
+  Gives visitors a quick count of how many tickets are waiting,
+  so they can decide whether it's worth joining now.
+  This is read-only — no form, no action buttons.
+-->
+<section aria-label="Queue snapshot" class="mt-4">
+
+  <h2 class="h5 mb-3">Current Queue</h2>
+
+  <!--
+    tickets is passed from the index() route in app.py.
+    We filter to only show "waiting" tickets in the count sentence
+    using Jinja's selectattr filter:
+      selectattr("status", "equalto", "waiting")
+      → keeps only dicts where ticket["status"] == "waiting"
+    | list  → convert the filter result to a list so we can call | length
+    | length → count the items
+  -->
+  {% set waiting = tickets | selectattr("status", "equalto", "waiting") | list %}
+
+  <p class="text-muted">
+    <!--
+      The ternary expression:
+        A if condition else B
+      is Jinja2's inline if.  Outputs the correct grammar:
+        "1 ticket waiting"  vs  "3 tickets waiting"
+    -->
+    {{ waiting | length }}
+    {{ "ticket" if waiting | length == 1 else "tickets" }}
+    currently waiting.
+  </p>
+
+  <!--
+    We show a simple list of ALL tickets (for staff/admin overview),
+    not just the waiting ones.  A real production app would likely
+    hide personal data here, but for our demo this is fine.
+    list-group         → Bootstrap component for styled lists
+    list-group-flush   → removes outer border (looks cleaner inside a card)
+  -->
+  {% if tickets %}
+    <ul class="list-group list-group-flush">
+      {% for t in tickets %}
+        <!--
+          list-group-item  → Bootstrap styling for each row
+          d-flex           → flexbox row so ticket# and name sit side by side
+          justify-content-between → pushes the badge to the right edge
+          align-items-center      → vertically centres content in the row
+        -->
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+
+          <span>
+            <!--
+              fw-semibold → Bootstrap 5.3 utility for font-weight: 600
+              We show the ticket number first — it's the primary identifier.
+            -->
+            <span class="fw-semibold">#{{ t.number }}</span>
+            {{ t.name }}
+          </span>
+
+          <!--
+            Status badge:
+            badge          → small pill / inline label
+            rounded-pill   → fully rounded corners
+            bg-* colour mapped from status:
+              called  → bg-warning (yellow  — "your turn soon")
+              waiting → bg-secondary (grey   — "in line")
+              done    → bg-success   (green  — "finished")
+            We always include a text label INSIDE the badge, not just
+            the colour, so colour-blind users still get the information.
+          -->
+          <span class="badge rounded-pill
+            {% if t.status == 'called' %}bg-warning text-dark
+            {% elif t.status == 'done' %}bg-success
+            {% else %}bg-secondary{% endif %}">
+            {{ t.status | capitalize }}
+          </span>
+
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <!--
+      Empty state message — shown when the queue has no tickets at all.
+      text-muted + fst-italic → subtle styling so it looks like a hint.
+    -->
+    <p class="text-muted fst-italic">The queue is empty — be the first to join!</p>
+  {% endif %}
+
+</section>
+
 {% endblock %}
