@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Student name** | [Last name, First name] |
-| **Section** | [Section, e.g., IT-3A / CCC181] |
+| **Student name** | Gabor, Sean Jric |
+| **Section** | CS3B / CCC181 |
 | **GitHub username** | gitnsaen |
 | **Date submitted** | 2026-10-21 |
 
