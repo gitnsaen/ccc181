@@ -43,7 +43,7 @@
 
 ### Screen 1: Home Page (Phone)
 
-![Home page on phone](screenshots/home-phone.png)
+![Home page on phone](screenshots/home-phone.jpeg)
 
 **Persona:** Sammy Bautista
 **Requirement IDs:** FR-01, FR-02
@@ -63,7 +63,7 @@
 
 ### Screen 3: Join Queue Form (Phone)
 
-![Join form on phone](screenshots/join-phone.png)
+![Join form on phone](screenshots/join-phone.jpeg)
 
 **Persona:** Sammy Bautista
 **Requirement IDs:** FR-01, FR-06
@@ -83,7 +83,7 @@
 
 ### Screen 5: My Place / Ticket (Phone)
 
-![My place on phone](screenshots/ticket-phone.png)
+![My place on phone](screenshots/myplace-phone.jpeg)
 
 **Persona:** Sammy Bautista
 **Requirement IDs:** FR-02, FR-03, FR-07
@@ -93,7 +93,7 @@
 
 ### Screen 6: My Place / Ticket (Laptop)
 
-![My place on laptop](screenshots/ticket-laptop.png)
+![My place on laptop](screenshots/myplace-laptop.png)
 
 **Persona:** Sammy Bautista
 **Requirement IDs:** FR-02, FR-03, FR-07
@@ -103,7 +103,7 @@
 
 ### Screen 7: Staff Dashboard (Phone)
 
-![Staff dashboard on phone](screenshots/staff-phone.png)
+![Staff dashboard on phone](screenshots/staff-phone.jpeg)
 
 **Persona:** Kuya Jun Ramos
 **Requirement IDs:** FR-04, FR-04a, FR-05, FR-06
