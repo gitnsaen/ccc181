@@ -179,10 +179,30 @@ def join():
 @app.route("/queue/<int:ticket_id>")
 def ticket(ticket_id):
     """Show a student's personal ticket / queue position page."""
-    for position, t in enumerate(TICKETS, start=1):
-        if t["number"] == ticket_id:
-            return render_template("ticket.html", ticket=t, position=position)
-    abort(404)
+    t = next((t for t in TICKETS if t["number"] == ticket_id), None)
+    if t is None:
+        abort(404)
+
+    # Count people ahead: only waiting tickets for same service with lower numbers
+    ahead = [x for x in TICKETS
+             if x["service_id"] == t["service_id"]
+             and x["status"] == "waiting"
+             and x["number"] < t["number"]]
+
+    service = next(s for s in SERVICES if s["id"] == t["service_id"])
+    return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
+
+
+@app.post("/queue/<int:ticket_id>/leave")
+def leave_queue(ticket_id):
+    """Leave the queue - mark ticket as no-show."""
+    t = next((t for t in TICKETS if t["number"] == ticket_id), None)
+    if t is None:
+        abort(404)
+
+    t["status"] = "no-show"
+    flash(f"Ticket #{ticket_id} has been removed from the queue.", "info")
+    return redirect(url_for("index"))
 
 
 @app.get("/staff")
