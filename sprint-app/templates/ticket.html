@@ -97,3 +97,41 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+  const statusUrl = "{{ url_for('ticket_status', ticket_id=ticket.number) }}";
+  async function refreshStatus() {
+    try {
+      const res = await fetch(statusUrl);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Update status badge
+      const statusBadge = document.querySelector('#live-status .badge');
+      if (statusBadge) {
+        const statusText = data.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        statusBadge.textContent = statusText;
+        statusBadge.className = 'badge rounded-pill fs-5 ' +
+          (data.status === 'called' ? 'bg-warning text-dark' :
+           data.status === 'served' ? 'bg-success' :
+           data.status === 'no-show' ? 'bg-danger' : 'bg-secondary');
+      }
+
+      // Update position text
+      const positionDiv = document.querySelector('#live-status').nextElementSibling;
+      if (positionDiv) {
+        if (data.ahead === 0) {
+          positionDiv.innerHTML = '<p class="h5 text-success">You\'re next!</p>';
+        } else {
+          positionDiv.innerHTML = '<p class="h5">' + data.ahead + ' ' +
+            (data.ahead === 1 ? 'person' : 'people') + ' ahead of you</p>';
+        }
+      }
+    } catch (err) {
+      console.warn("Could not refresh status", err);
+    }
+  }
+  setInterval(refreshStatus, 10000);
+</script>
+{% endblock %}
