@@ -3,10 +3,10 @@
 **App:** sPrint – Campus Print Shop Queue Management System
 **Setting:** University Student Center Copy & Print Shop
 **Full name:** Gabor, Sean Jric
-**Student ID:** [Your student ID]
+**Student ID:** 2024-0819
 **Section:** CS3B
 **Date:** October 24, 2026
-**Pull request link:** [Link to your GitHub PR - will add after PR is created]
+**Pull request link:** https://github.com/gitnsaen/ccc181/pull/6
 
 ---
 
