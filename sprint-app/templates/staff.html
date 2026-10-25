@@ -3,19 +3,166 @@
 {% block title %}Staff Dashboard · sPrint{% endblock %}
 
 {% block content %}
+<div class="container-fluid">
+  <h1 class="h3 mb-4">sPrint Operator Dashboard</h1>
 
-<!--
-  Placeholder page for Part 7.
-  The full staff dashboard (queue table, service filter, Call Next button,
-  Mark Done / Skip actions) will be built here in Part 7.
-  For now it just confirms the route works and shows the navbar.
--->
-<h1 class="h3 mb-4">Staff Dashboard</h1>
+  <!-- Service filter -->
+  <form method="get" action="{{ url_for('staff_dashboard') }}" class="mb-4">
+    <div class="row align-items-end">
+      <div class="col-md-4">
+        <label for="service_filter" class="form-label">Filter by service</label>
+        <select id="service_filter" name="service_id" class="form-select"
+                onchange="this.form.submit()">
+          <option value="">All services</option>
+          {% for s in services %}
+            <option value="{{ s.id }}"
+              {% if selected == s.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-8">
+        <a href="{{ url_for('staff_dashboard') }}" class="btn btn-outline-secondary">Clear filter</a>
+      </div>
+    </div>
+  </form>
 
-<p class="text-muted">
-  This page is under construction. The full queue management interface
-  will be available after Part 7.
-</p>
+  <!-- Call Next button -->
+  {% if queue %}
+  <div class="mb-3">
+    {% set next_ticket = queue | sort(attribute='number') | first %}
+    <form method="post" action="{{ url_for('staff_action', ticket_id=next_ticket.number, action='call') }}"
+          class="d-inline">
+      <button type="submit" class="btn btn-primary btn-lg">
+        📢 Call Next Job (Ticket #{{ next_ticket.number }})
+      </button>
+    </form>
+  </div>
+  {% endif %}
 
+  <!-- Queue table -->
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <caption class="caption-top">
+        {% if selected %}
+          Showing {{ queue | length }} ticket(s) for {{ names[selected] }}
+        {% else %}
+          Showing all {{ queue | length }} ticket(s)
+        {% endif %}
+      </caption>
+      <thead class="table-light">
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Name</th>
+          <th scope="col">Service</th>
+          <th scope="col">Document</th>
+          <th scope="col">Pages</th>
+          <th scope="col">Type</th>
+          <th scope="col">Rush</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if queue %}
+          {% for t in queue | sort(attribute='number') %}
+          <tr>
+            <td class="fw-semibold">{{ t.number }}</td>
+            <td>
+              <div>{{ t.name }}</div>
+              <small class="text-muted">{{ t.student_id }}</small>
+              <br>
+              <small class="text-muted">{{ t.email }}</small>
+            </td>
+            <td>{{ names[t.service_id] }}</td>
+            <td>
+              <small class="text-muted">
+                {% if t.sent_via == 'gmail' %}Gmail{% else %}FB{% endif %}:
+              </small>
+              <div>{{ t.doc_name }}</div>
+            </td>
+            <td>
+              {% if t.pages_type == 'all' %}
+                {{ t.pages }}
+              {% else %}
+                {{ t.pages_range }}
+              {% endif %}
+            </td>
+            <td>
+              {% if t.print_type == 'color' %}
+                <span class="badge bg-info">Color</span>
+              {% else %}
+                <span class="text-muted">B&W</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if t.is_rush %}
+                <span class="badge bg-danger">★</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge rounded-pill
+                {% if t.status == 'called' %}bg-warning text-dark
+                {% elif t.status == 'served' %}bg-success
+                {% elif t.status == 'no-show' %}bg-danger
+                {% else %}bg-secondary{% endif %}">
+                {{ t.status | replace('_', ' ') | capitalize }}
+              </span>
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                {% if t.status == 'waiting' %}
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='call') }}"
+                      class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-primary"
+                          aria-label="Call ticket {{ t.number }}">
+                    Call
+                  </button>
+                </form>
+                {% endif %}
+
+                {% if t.status == 'called' %}
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='serve') }}"
+                      class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-success"
+                          aria-label="Mark ticket {{ t.number }} as served">
+                    Serve
+                  </button>
+                </form>
+                {% endif %}
+
+                {% if t.status in ('waiting', 'called') %}
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='no-show') }}"
+                      class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          aria-label="Mark ticket {{ t.number }} as no-show">
+                    No-show
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+              <p class="mb-0">No tickets in the queue.</p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Note about staff login -->
+  <div class="alert alert-info mt-4">
+    <small>
+      <strong>Note:</strong> Staff login will be added in a later week.
+      For now, the dashboard is open for testing purposes.
+    </small>
+  </div>
+</div>
 {% endblock %}
 
