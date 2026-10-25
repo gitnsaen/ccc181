@@ -51,28 +51,28 @@
 
 </section>
 
-<!--
-  ═══════════════════════════════════════════════════════════════
-  CURRENT QUEUE SNAPSHOT
-  ═══════════════════════════════════════════════════════════════
-  Gives visitors a quick count of how many tickets are waiting,
-  so they can decide whether it's worth joining now.
-  This is read-only — no form, no action buttons.
--->
+  <!--
+    ═══════════════════════════════════════════════════════════════
+    CURRENT QUEUE SNAPSHOT
+    ═══════════════════════════════════════════════════════════════
+    Gives visitors a quick count of how many tickets are waiting,
+    so they can decide whether it's worth joining now.
+    This is read-only — no form, no action buttons.
+    Only shows tickets with status "waiting" or "called" (not "served" or "no-show").
+  -->
 <section aria-label="Queue snapshot" class="mt-4">
 
   <h2 class="h5 mb-3">Current Queue</h2>
 
   <!--
     tickets is passed from the index() route in app.py.
-    We filter to only show "waiting" tickets in the count sentence
+    We filter to only show "waiting" and "called" tickets in the count sentence
     using Jinja's selectattr filter:
-      selectattr("status", "equalto", "waiting")
-      → keeps only dicts where ticket["status"] == "waiting"
+      selectattr("status", "in", ...) keeps dicts where ticket["status"] is in the list
     | list  → convert the filter result to a list so we can call | length
     | length → count the items
   -->
-  {% set waiting = tickets | selectattr("status", "equalto", "waiting") | list %}
+  {% set active = tickets | selectattr("status", "in", ["waiting", "called"]) | list %}
 
   <p class="text-muted">
     <!--
@@ -81,21 +81,21 @@
       is Jinja2's inline if.  Outputs the correct grammar:
         "1 ticket waiting"  vs  "3 tickets waiting"
     -->
-    {{ waiting | length }}
-    {{ "ticket" if waiting | length == 1 else "tickets" }}
-    currently waiting.
+    {{ active | length }}
+    {{ "ticket" if active | length == 1 else "tickets" }}
+    currently waiting or being served.
   </p>
 
   <!--
-    We show a simple list of ALL tickets (for staff/admin overview),
-    not just the waiting ones.  A real production app would likely
+    We show a simple list of active tickets (waiting and called),
+    not the served ones. A real production app would likely
     hide personal data here, but for our demo this is fine.
     list-group         → Bootstrap component for styled lists
     list-group-flush   → removes outer border (looks cleaner inside a card)
   -->
-  {% if tickets %}
+  {% if active %}
     <ul class="list-group list-group-flush">
-      {% for t in tickets %}
+      {% for t in active %}
         <!--
           list-group-item  → Bootstrap styling for each row
           d-flex           → flexbox row so ticket# and name sit side by side
@@ -126,7 +126,8 @@
           -->
           <span class="badge rounded-pill
             {% if t.status == 'called' %}bg-warning text-dark
-            {% elif t.status == 'done' %}bg-success
+            {% elif t.status == 'served' %}bg-success
+            {% elif t.status == 'no-show' %}bg-danger
             {% else %}bg-secondary{% endif %}">
             {{ t.status | capitalize }}
           </span>
@@ -136,7 +137,7 @@
     </ul>
   {% else %}
     <!--
-      Empty state message — shown when the queue has no tickets at all.
+      Empty state message — shown when the queue has no active tickets.
       text-muted + fst-italic → subtle styling so it looks like a hint.
     -->
     <p class="text-muted fst-italic">The queue is empty — be the first to join!</p>

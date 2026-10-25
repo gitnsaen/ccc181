@@ -183,10 +183,9 @@ def ticket(ticket_id):
     if t is None:
         abort(404)
 
-    # Count people ahead: only waiting tickets for same service with lower numbers
+    # Count people ahead: all waiting tickets with lower numbers (unified queue)
     ahead = [x for x in TICKETS
-             if x["service_id"] == t["service_id"]
-             and x["status"] == "waiting"
+             if x["status"] == "waiting"
              and x["number"] < t["number"]]
 
     service = next(s for s in SERVICES if s["id"] == t["service_id"])
@@ -213,8 +212,7 @@ def ticket_status(ticket_id):
         abort(404)
 
     ahead = sum(1 for x in TICKETS
-                if x["service_id"] == t["service_id"]
-                and x["status"] == "waiting"
+                if x["status"] == "waiting"
                 and x["number"] < t["number"])
 
     return {"status": t["status"], "ahead": ahead}

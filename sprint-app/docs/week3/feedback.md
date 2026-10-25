@@ -1,6 +1,6 @@
 # Week 3 – Self-Review: Personas and Wireframes
 
-**Student:** [Last name, First name] | **Section:** [Section]
+**Student:** Gabor, Sean Jric | **Section:** CS3B
 **App:** sPrint – Campus Print Shop Queue Management System
 
 ---
