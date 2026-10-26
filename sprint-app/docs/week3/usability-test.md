@@ -80,14 +80,14 @@ The "Pages" field UX is confusing - when a user selects "All" radio button, they
 3. Added JavaScript to disable the unused pages input field based on radio selection
 4. Fixed home page to only show waiting and called tickets (not served/no-show)
 
-**Before screenshot:** ![Before improvement](docs/week3/usability-test-photos/before.png)
-**After screenshot:** ![After improvement](docs/week3/usability-test-photos/after.png)
+**Before screenshot:** ![Before improvement](usability-test-photos/before.png)
+**After screenshot:** ![After improvement](usability-test-photos/after.png)
 
 ---
 
 ## Notes
 
-**Permission obtained for recording:** N/A (not recorded) Documentaion only: [usability-test-carla](docs/week3/usability-test-photos/usability-test-carla.jpeg)
+**Permission obtained for recording:** N/A (not recorded) Documentaion only: ![usability-test-carla](usability-test-photos/usability-test-carla.jpeg)
 **Other observations:**
 - The filename field confusion suggests the label or placeholder needs to be clearer about what information to enter
 - Horizontal scroll on staff dashboard table on mobile was not obvious - could add a visual indicator or improve the responsive layout
