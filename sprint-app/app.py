@@ -1,18 +1,10 @@
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 
-# ── App setup ──────────────────────────────────────────────────────────────────
+# App configuration
 app = Flask(__name__)
-
-# secret_key is required by Flask whenever you use the session or flash()
-# function.  Without it Flask raises a RuntimeError at startup.
-# In production this would be a long random string kept in an environment
-# variable; for development any string works.
 app.secret_key = "sprint-dev-secret"
 
-# ── In-memory data ─────────────────────────────────────────────────────────────
-
-# List of services offered at the campus print shop.
-# Each dict has an "id" (used in forms and tickets) and a human-readable "name".
+# Temporary in-memory data stores (Week 3 baseline)
 SERVICES = [
     {"id": 1, "name": "Document Printing (B&W / Color)"},
     {"id": 2, "name": "Thesis & Manuscript Binding"},
@@ -20,21 +12,6 @@ SERVICES = [
     {"id": 4, "name": "Scanning & Photocopying"},
 ]
 
-# Seed queue data representing active print jobs.
-# Fields:
-#   number       – queue ticket number shown to the student
-#   name         – student's full name
-#   email        – contact email
-#   student_id   – university ID number (used to look up later)
-#   service_id   – foreign key into SERVICES list above
-#   sent_via     – "gmail" or "fb" (how the file was sent)
-#   doc_name     – file reference (FB message / Gmail subject the student sent)
-#   pages        – total pages to print
-#   pages_type   – "all" or "specific"
-#   pages_range  – page range string if pages_type is "specific"
-#   print_type   – "bw" (black & white) or "color"
-#   is_rush      – True if student paid for rush service
-#   status       – "waiting" | "called" | "done"
 TICKETS = [
     {
         "number": 1,
@@ -84,34 +61,20 @@ TICKETS = [
 ]
 
 
-# ── Routes ─────────────────────────────────────────────────────────────────────
-
+# Home route
 @app.route("/")
 def index():
-    """Home page – shows a welcome message and a button to join the queue."""
     return render_template("index.html", tickets=TICKETS)
 
 
+# Join queue routes
 @app.get("/join")
 def join_form():
-    """Show the empty join-queue form (GET only).
-
-    We split GET and POST into separate functions so each has one job.
-    Flask's @app.get() decorator is shorthand for
-    @app.route("/join", methods=["GET"]).
-    The function name 'join_form' is what url_for() uses in templates.
-    """
     return render_template("join.html", services=SERVICES, form={})
 
 
 @app.post("/join")
 def join():
-    """Process the join-queue form submission (POST only).
-
-    @app.post() is shorthand for @app.route("/join", methods=["POST"]).
-    Having a separate function keeps validation logic isolated and readable.
-    Full server-side validation for all sPrint-specific fields.
-    """
     form = request.form
     name = form.get("name", "").strip()
     email = form.get("email", "").strip().lower()
@@ -137,7 +100,6 @@ def join():
     if not doc_name:
         errors["doc_name"] = "Enter the document or file reference (e.g., file name sent via FB/Gmail)."
 
-    # Validate pages based on type selected
     if pages_type == "all":
         if not pages_count or pages_count <= 0:
             errors["pages"] = "Enter a valid number of pages (must be greater than 0)."
@@ -145,7 +107,7 @@ def join():
     elif pages_type == "specific":
         if not pages_range:
             errors["pages"] = "Enter the specific page ranges (e.g., 1-2, 5, 9-10, 15)."
-        pages = len(pages_range.split(",")) if pages_range else 0  # Approximate count
+        pages = len(pages_range.split(",")) if pages_range else 0
     else:
         errors["pages"] = "Choose whether to print all pages or specific pages."
 
@@ -176,25 +138,20 @@ def join():
     return redirect(url_for("ticket", ticket_id=number))
 
 
+# Student ticket views
 @app.route("/queue/<int:ticket_id>")
 def ticket(ticket_id):
-    """Show a student's personal ticket / queue position page."""
     t = next((t for t in TICKETS if t["number"] == ticket_id), None)
     if t is None:
         abort(404)
 
-    # Count people ahead: all waiting tickets with lower numbers (unified queue)
-    ahead = [x for x in TICKETS
-             if x["status"] == "waiting"
-             and x["number"] < t["number"]]
-
+    ahead = [x for x in TICKETS if x["status"] == "waiting" and x["number"] < t["number"]]
     service = next(s for s in SERVICES if s["id"] == t["service_id"])
     return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
 
 
 @app.post("/queue/<int:ticket_id>/leave")
 def leave_queue(ticket_id):
-    """Leave the queue - mark ticket as no-show."""
     t = next((t for t in TICKETS if t["number"] == ticket_id), None)
     if t is None:
         abort(404)
@@ -206,21 +163,17 @@ def leave_queue(ticket_id):
 
 @app.get("/queue/<int:ticket_id>/status.json")
 def ticket_status(ticket_id):
-    """JSON endpoint for auto-refreshing ticket status."""
     t = next((t for t in TICKETS if t["number"] == ticket_id), None)
     if t is None:
         abort(404)
 
-    ahead = sum(1 for x in TICKETS
-                if x["status"] == "waiting"
-                and x["number"] < t["number"])
-
+    ahead = sum(1 for x in TICKETS if x["status"] == "waiting" and x["number"] < t["number"])
     return {"status": t["status"], "ahead": ahead}
 
 
+# Staff dashboard views
 @app.get("/staff")
 def staff_dashboard():
-    """Staff dashboard – shows waiting and called tickets, filtered by service."""
     service_id = request.args.get("service_id", type=int)
     queue = [t for t in TICKETS if t["status"] in ("waiting", "called")]
     if service_id:
@@ -232,7 +185,6 @@ def staff_dashboard():
 
 @app.post("/staff/tickets/<int:ticket_id>/<action>")
 def staff_action(ticket_id, action):
-    """Handle staff actions: call, serve, or no-show a ticket."""
     new_status = {"call": "called", "serve": "served", "no-show": "no-show"}.get(action)
     t = next((t for t in TICKETS if t["number"] == ticket_id), None)
     if t is None or new_status is None:
@@ -241,8 +193,6 @@ def staff_action(ticket_id, action):
     flash(f"Ticket #{ticket_id} marked {new_status}.", "info")
     return redirect(url_for("staff_dashboard"))
 
-
-# ── Dev entry point ────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     app.run(debug=True)

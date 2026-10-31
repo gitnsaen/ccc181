@@ -6,6 +6,10 @@
 - **Setting:** University Student Center Copy & Print Shop
 - **Problem Solved:** Long lines, lost files, and counter crowding during morning peak hours and assignment deadlines.
 
+## Documentation
+- [System Requirements Specification](docs/requirements.md): Living requirements document with functional and non-functional requirements, MVP scope, and user validation notes.
+- [User Personas](docs/week3/personas.md): Target user profiles (Sammy Bautista and Kuya Jun Ramos) grounded in campus field research.
+
 ## How to Run
 1. Activate the Python virtual environment:
    ```bash

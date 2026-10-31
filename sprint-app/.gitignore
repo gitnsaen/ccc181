@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 .DS_Store
 instance/
+.env
+
+# Reference guides & developer logs (untracked per course rules)
+hw4_queue_app_db.md
+CCC181-Week4-PostgreSQL-Docker-and-Data-Persistence.html
+project_progress_log.md
+code_explanations.md
