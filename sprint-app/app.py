@@ -210,5 +210,22 @@ def staff_action(ticket_id, action):
     return redirect(url_for("staff_dashboard"))
 
 
+@app.cli.command("seed")
+def seed():
+    """Add the starting services if they are not there yet."""
+    starting = [
+        ("Document Printing (B&W / Color)", "print_doc"),
+        ("Thesis & Manuscript Binding", "bind_thesis"),
+        ("Large Format Poster & Plan Plotting", "plot_poster"),
+        ("Scanning & Photocopying", "scan_copy"),
+    ]
+    for name, code in starting:
+        exists = db.session.scalar(db.select(Service).filter_by(name=name))
+        if exists is None:
+            db.session.add(Service(name=name, code=code))
+    db.session.commit()
+    print("Services are ready.")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
