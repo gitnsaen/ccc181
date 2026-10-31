@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 instance/
 .env
+.vscode/
 
 # Reference guides & developer logs (untracked per course rules)
 hw4_queue_app_db.md
