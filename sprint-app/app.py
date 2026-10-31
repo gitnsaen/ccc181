@@ -1,10 +1,25 @@
+import os
+
+from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from flask_migrate import Migrate
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
-# App configuration
+from models import Service, Operator, Ticket, db
+
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = "sprint-dev-secret"
+app.secret_key = "sprint_dev_flask_secret_key_8d1ee41d"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
+app.config["SQLALCHEMY_ECHO"] = os.environ.get("SQLALCHEMY_ECHO") == "1"
 
-# Temporary in-memory data stores (Week 3 baseline)
+db.init_app(app)
+migrate = Migrate(app, db)
+
+
+# Temporary in-memory baseline data stores (retained for existing routes until Part 7)
 SERVICES = [
     {"id": 1, "name": "Document Printing (B&W / Color)"},
     {"id": 2, "name": "Thesis & Manuscript Binding"},
@@ -132,7 +147,7 @@ def join():
         "pages_range": pages_range if pages_type == "specific" else None,
         "print_type": print_type,
         "is_rush": is_rush,
-        "status": "waiting"
+        "status": "waiting",
     })
     flash(f"You joined the queue. Your ticket is #{number}.", "success")
     return redirect(url_for("ticket", ticket_id=number))
@@ -179,8 +194,9 @@ def staff_dashboard():
     if service_id:
         queue = [t for t in queue if t["service_id"] == service_id]
     names = {s["id"]: s["name"] for s in SERVICES}
-    return render_template("staff.html", queue=queue, services=SERVICES,
-                           names=names, selected=service_id)
+    return render_template(
+        "staff.html", queue=queue, services=SERVICES, names=names, selected=service_id
+    )
 
 
 @app.post("/staff/tickets/<int:ticket_id>/<action>")
