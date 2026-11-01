@@ -114,16 +114,21 @@
             badge          → small pill / inline label
             rounded-pill   → fully rounded corners
             bg-* colour mapped from status:
-              called  → bg-warning (yellow  — "your turn soon")
-              waiting → bg-secondary (grey   — "in line")
-              done    → bg-success   (green  — "finished")
+                waiting → bg-warning (yellow — "in line")
+                called  → bg-success (green — "your turn")
+                served  → bg-primary (blue — "finished")
+                no-show → bg-danger (red)
+                left    → bg-secondary (grey)
+                unreadable → purple
             We always include a text label INSIDE the badge, not just
             the colour, so colour-blind users still get the information.
           -->
           <span class="badge rounded-pill
-            {% if t.status == 'called' %}bg-warning text-dark
-            {% elif t.status == 'served' %}bg-success
+            {% if t.status == 'waiting' %}bg-warning text-dark
+            {% elif t.status == 'called' %}bg-success
+            {% elif t.status == 'served' %}bg-primary
             {% elif t.status == 'no-show' %}bg-danger
+            {% elif t.status == 'unreadable' %}bg-status-unreadable
             {% else %}bg-secondary{% endif %}">
             {{ t.status | capitalize }}
           </span>

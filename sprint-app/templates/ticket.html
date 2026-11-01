@@ -13,9 +13,11 @@
         <!-- Status badge with text label -->
         <div id="live-status" aria-live="polite" class="text-center mb-4">
           <span class="badge rounded-pill fs-5
-            {% if ticket.status == 'called' %}bg-warning text-dark
-            {% elif ticket.status == 'served' %}bg-success
+            {% if ticket.status == 'waiting' %}bg-warning text-dark
+            {% elif ticket.status == 'called' %}bg-success
+            {% elif ticket.status == 'served' %}bg-primary
             {% elif ticket.status == 'no-show' %}bg-danger
+            {% elif ticket.status == 'unreadable' %}bg-status-unreadable
             {% elif ticket.status == 'left' %}bg-secondary
             {% else %}bg-secondary{% endif %}">
             {{ ticket.status | replace('_', ' ') | capitalize }}
@@ -77,6 +79,10 @@
               <td class="text-muted">Print type</td>
               <td>{{ "Black & White" if ticket.print_type == 'bw' else 'Color' }}</td>
             </tr>
+            <tr>
+              <td class="text-muted">Paper size</td>
+              <td>{{ ticket.paper_size | upper }}</td>
+            </tr>
             {% if ticket.is_rush %}
             <tr>
               <td class="text-muted"></td>
@@ -88,7 +94,7 @@
 
         <!-- Leave queue button -->
         {% if ticket.status == 'waiting' %}
-        <form method="post" action="{{ url_for('leave_queue', ticket_id=ticket.ticket_number) }}"
+        <form method="post" action="{{ url_for('leave_queue', ticket_id=ticket.id) }}"
               onsubmit="return confirm('Are you sure you want to leave the queue?');">
           <button type="submit" class="btn btn-outline-danger w-100">Leave the queue</button>
         </form>
@@ -105,7 +111,7 @@
 
 {% block scripts %}
 <script>
-  const statusUrl = "{{ url_for('ticket_status', ticket_id=ticket.ticket_number) }}";
+  const statusUrl = "{{ url_for('ticket_status', ticket_id=ticket.id) }}";
   async function refreshStatus() {
     try {
       const res = await fetch(statusUrl);
@@ -116,11 +122,17 @@
       const statusBadge = document.querySelector('#live-status .badge');
       if (statusBadge) {
         const statusText = data.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const statusClasses = {
+          waiting: 'bg-warning text-dark',
+          called: 'bg-success',
+          served: 'bg-primary',
+          'no-show': 'bg-danger',
+          unreadable: 'bg-status-unreadable',
+          left: 'bg-secondary',
+        };
         statusBadge.textContent = statusText;
         statusBadge.className = 'badge rounded-pill fs-5 ' +
-          (data.status === 'called' ? 'bg-warning text-dark' :
-           data.status === 'served' ? 'bg-success' :
-           data.status === 'no-show' ? 'bg-danger' : 'bg-secondary');
+          (statusClasses[data.status] || 'bg-secondary');
       }
 
       // Update position text

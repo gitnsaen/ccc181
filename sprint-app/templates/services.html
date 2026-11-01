@@ -57,14 +57,19 @@
           <td>{{ s.tickets|length }}</td>
           <td>
             <div class="btn-group" role="group">
-              <form method="post" action="{{ url_for('service_edit', service_id=s.id) }}" class="d-inline">
-                <input type="hidden" name="name" value="{{ s.name }}">
-                <input type="hidden" name="code" value="{{ s.code }}">
-                <input type="hidden" name="is_active" value="{% if not s.is_active %}on{% endif %}">
-                <button type="submit" class="btn btn-sm btn-outline-primary"
-                        aria-label="Toggle active status for {{ s.name }}">
-                  {% if s.is_active %}Turn Off{% else %}Turn On{% endif %}
-                </button>
+              <form method="post" action="{{ url_for('service_edit', service_id=s.id) }}">
+                <label class="visually-hidden" for="service-name-{{ s.id }}">Service name</label>
+                <input id="service-name-{{ s.id }}" type="text" name="name" required maxlength="100"
+                       class="form-control form-control-sm mb-1" value="{{ s.name }}">
+                <label class="visually-hidden" for="service-code-{{ s.id }}">Service code</label>
+                <input id="service-code-{{ s.id }}" type="text" name="code" required maxlength="30"
+                       class="form-control form-control-sm mb-1" value="{{ s.code }}">
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" name="is_active"
+                         id="service-active-{{ s.id }}" {% if s.is_active %}checked{% endif %}>
+                  <label class="form-check-label small" for="service-active-{{ s.id }}">Active</label>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
               </form>
 
               <form method="post" action="{{ url_for('service_delete', service_id=s.id) }}"

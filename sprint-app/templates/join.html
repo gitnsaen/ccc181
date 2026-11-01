@@ -10,7 +10,7 @@
     <form method="post" action="{{ url_for('join') }}" novalidate id="join-form">
       <div class="mb-3">
         <label for="name" class="form-label">Full Name *</label>
-        <input id="name" name="name" type="text" autocomplete="name" required
+        <input id="name" name="name" type="text" autocomplete="name" required maxlength="100"
                class="form-control {% if errors and errors.name %}is-invalid{% endif %}"
                value="{{ form.get('name', '') }}"
                placeholder="e.g., Juan Dela Cruz"
@@ -60,10 +60,24 @@
       </div>
 
       <div class="mb-3">
+        <label for="paper_size" class="form-label">Paper size *</label>
+        <select id="paper_size" name="paper_size" required
+                class="form-select {% if errors and errors.paper_size %}is-invalid{% endif %}">
+          <option value="">Choose a paper size…</option>
+          <option value="letter" {% if form.get('paper_size') == 'letter' %}selected{% endif %}>Letter</option>
+          <option value="a4" {% if form.get('paper_size') == 'a4' %}selected{% endif %}>A4</option>
+          <option value="legal" {% if form.get('paper_size') == 'legal' %}selected{% endif %}>Legal</option>
+        </select>
+        {% if errors and errors.paper_size %}
+          <div class="invalid-feedback">{{ errors.paper_size }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
         <label class="form-label">Document / File reference (FB Page message / Gmail) *</label>
         <div class="mb-2">
           <label for="sent_via" class="form-label small text-muted">Sent via</label>
-          <select id="sent_via" name="sent_via" class="form-select form-select-sm">
+          <select id="sent_via" name="sent_via" required class="form-select form-select-sm">
             <option value="gmail" {% if form.get('sent_via') == 'gmail' %}selected{% endif %}>Gmail</option>
             <option value="fb" {% if form.get('sent_via') == 'fb' %}selected{% endif %}>FB Page message</option>
           </select>
@@ -84,21 +98,24 @@
           <div class="invalid-feedback d-block mb-2">{{ errors.pages }}</div>
         {% endif %}
         <div class="form-check">
-          <input class="form-check-input" type="radio" name="pages_type" id="pages_all" value="all"
+          <input class="form-check-input" type="radio" name="pages_type" id="pages_all" value="all" required
                  {% if form.get('pages_type') == 'all' or not form.get('pages_type') %}checked{% endif %}>
           <label class="form-check-label" for="pages_all">All</label>
-          <input id="pages_count" name="pages_count" type="number" min="1" class="form-control form-control-sm d-inline-block ms-2" style="width: 80px;"
-                 value="{{ form.get('pages_count', '') }}"
-                 placeholder="e.g., 12">
         </div>
         <div class="form-check">
           <input class="form-check-input" type="radio" name="pages_type" id="pages_specific" value="specific"
                  {% if form.get('pages_type') == 'specific' %}checked{% endif %}>
           <label class="form-check-label" for="pages_specific">Specific pages</label>
           <input id="pages_range" name="pages_range" type="text" class="form-control form-control-sm d-inline-block ms-2" style="width: 200px;"
+                 aria-label="Specific page ranges"
                  placeholder="e.g. 1-2, 5, 9-10, 15"
                  value="{{ form.get('pages_range', '') }}">
         </div>
+        <label for="pages_count" class="form-label mt-2">Total pages *</label>
+        <input id="pages_count" name="pages_count" type="number" min="1" required
+               class="form-control form-control-sm" style="max-width: 120px;"
+               value="{{ form.get('pages_count', '') }}"
+               placeholder="e.g., 12">
         <div class="form-text text-muted">Enter the total number of pages even if printing all (needed for record and pricing)</div>
       </div>
 
@@ -142,18 +159,14 @@
   // Handle pages field UX: disable unused input based on radio selection
   const pagesAll = document.getElementById('pages_all');
   const pagesSpecific = document.getElementById('pages_specific');
-  const pagesCount = document.getElementById('pages_count');
   const pagesRange = document.getElementById('pages_range');
 
-  if (pagesAll && pagesSpecific && pagesCount && pagesRange) {
+  if (pagesAll && pagesSpecific && pagesRange) {
     function updatePagesFields() {
       if (pagesAll.checked) {
-        pagesCount.disabled = false;
         pagesRange.disabled = true;
         pagesRange.value = '';
       } else {
-        pagesCount.disabled = true;
-        pagesCount.value = '';
         pagesRange.disabled = false;
       }
     }

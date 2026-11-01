@@ -4,7 +4,7 @@ from datetime import timedelta, timezone
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from flask_migrate import Migrate
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
 from models import Service, Operator, Ticket, db
@@ -23,16 +23,6 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 
-# Helper: all active services
-def all_services():
-    return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
-
-
-# Helper: active services for join form (same as all_services for sPrint)
-def active_services():
-    return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
-
-
 # Helper: position in line
 def people_ahead(t):
     """Count tickets still waiting for the same service that joined before t."""
@@ -40,7 +30,11 @@ def people_ahead(t):
             .select_from(Ticket)
             .where(Ticket.service_id == t.service_id,
                    Ticket.status == "waiting",
-                   Ticket.created_at < t.created_at))
+                   or_(
+                       Ticket.created_at < t.created_at,
+                       (Ticket.created_at == t.created_at)
+                       & (Ticket.ticket_number < t.ticket_number),
+                   )))
     return db.session.scalar(stmt)
 
 
@@ -51,9 +45,18 @@ def local_time(value):
     return value.astimezone(PH_TIME).strftime("%b %d, %I:%M %p") if value else ""
 
 
-# Helper: all active services
 def all_services():
-    return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
+    return db.session.scalars(
+        db.select(Service).order_by(Service.name)
+    ).all()
+
+
+def active_services():
+    return db.session.scalars(
+        db.select(Service)
+        .where(Service.is_active.is_(True))
+        .order_by(Service.name)
+    ).all()
 
 
 # Home route
@@ -83,6 +86,7 @@ def join():
     sent_via = form.get("sent_via", "").strip()
     doc_name = form.get("doc_name", "").strip()
     pages_type = form.get("pages_type", "").strip()
+    paper_size = form.get("paper_size", "").strip()
     pages_count = form.get("pages_count", type=int)
     pages_range = form.get("pages_range", "").strip()
     print_type = form.get("print_type", "").strip()
@@ -91,45 +95,38 @@ def join():
     service = db.session.get(Service, service_id) if service_id else None
 
     errors = {}
-    if service is None or not service.is_active:
-        errors["service_id"] = "Choose a service."
     if not name or len(name) > 100:
         errors["name"] = "Enter your name (up to 100 characters)."
     if "@" not in email or len(email) > 255:
         errors["email"] = "Enter a valid email address."
     if not student_id or len(student_id) > 20:
         errors["student_id"] = "Enter your student ID (up to 20 characters)."
-    if service is None:
+    if service is None or not service.is_active:
         errors["service_id"] = "Choose a service."
     if sent_via not in ("gmail", "fb"):
         errors["sent_via"] = "Choose how you sent the file (Gmail or FB)."
     if not doc_name:
         errors["doc_name"] = "Enter the document or file reference (e.g., file name sent via FB/Gmail)."
 
-    if pages_type == "all":
-        if not pages_count or pages_count <= 0:
-            errors["pages"] = "Enter a valid number of pages (must be greater than 0)."
-        pages = pages_count
-    elif pages_type == "specific":
+    if not pages_count or pages_count <= 0:
+        errors["pages"] = "Enter a valid total number of pages (must be greater than 0)."
+    pages = pages_count
+    if pages_type == "specific":
         if not pages_range:
             errors["pages"] = "Enter the specific page ranges (e.g., 1-2, 5, 9-10, 15)."
-        pages = len(pages_range.split(",")) if pages_range else 0
-    else:
+    elif pages_type != "all":
         errors["pages"] = "Choose whether to print all pages or specific pages."
 
     if print_type not in ("bw", "color"):
         errors["print_type"] = "Choose a print type (B&W or Color)."
+    if paper_size not in ("letter", "a4", "legal"):
+        errors["paper_size"] = "Choose a paper size."
 
     if errors:
         flash("Please fix the highlighted fields.", "danger")
         return render_template("join.html", services=active_services(), form=form, errors=errors), 400
 
-    # Allocate next ticket number (monotonic)
-    max_number = db.session.scalar(db.select(func.max(Ticket.ticket_number)))
-    ticket_number = (max_number + 1) if max_number is not None else 1
-
     ticket = Ticket(
-        ticket_number=ticket_number,
         name=name,
         email=email,
         student_id=student_id,
@@ -140,7 +137,7 @@ def join():
         pages_type=pages_type,
         pages_range=pages_range if pages_type == "specific" else None,
         print_type=print_type,
-        paper_size="letter",  # Default, can be enhanced later
+        paper_size=paper_size,
         is_rush=is_rush,
         status="waiting",
     )
@@ -150,27 +147,28 @@ def join():
     except IntegrityError:
         db.session.rollback()
         flash("Something went wrong saving your ticket. Please try again.", "danger")
-        return render_template("join.html", services=all_services(), form=form, errors={}), 409
+        return render_template(
+            "join.html",
+            services=active_services(),
+            form=form,
+            errors={},
+        ), 409
 
     flash(f"You joined the queue. Your ticket is #{ticket.ticket_number}.", "success")
-    return redirect(url_for("ticket", ticket_id=ticket.ticket_number))
+    return redirect(url_for("ticket", ticket_id=ticket.id))
 
 
 # Student ticket views
 @app.route("/queue/<int:ticket_id>")
 def ticket(ticket_id):
-    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
-    if t is None:
-        abort(404)
+    t = db.get_or_404(Ticket, ticket_id)
 
     return render_template("ticket.html", ticket=t, service=t.service, ahead=people_ahead(t))
 
 
 @app.post("/queue/<int:ticket_id>/leave")
 def leave_queue(ticket_id):
-    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
-    if t is None:
-        abort(404)
+    t = db.get_or_404(Ticket, ticket_id)
 
     if t.status == "waiting":
         t.status = "left"  # soft delete: row stays for reports
@@ -181,9 +179,7 @@ def leave_queue(ticket_id):
 
 @app.get("/queue/<int:ticket_id>/status.json")
 def ticket_status(ticket_id):
-    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
-    if t is None:
-        abort(404)
+    t = db.get_or_404(Ticket, ticket_id)
 
     return {"status": t.status, "ahead": people_ahead(t)}
 
@@ -193,13 +189,46 @@ def ticket_status(ticket_id):
 def staff_dashboard():
     service_id = request.args.get("service_id", type=int)
     query = db.select(Ticket).where(Ticket.status.in_(["waiting", "called"]))
+    waiting_query = db.select(Ticket).where(Ticket.status == "waiting")
     if service_id:
         query = query.where(Ticket.service_id == service_id)
-    queue = db.session.scalars(query.order_by(Ticket.created_at)).all()
+        waiting_query = waiting_query.where(Ticket.service_id == service_id)
+    queue = db.session.scalars(
+        query.order_by(Ticket.created_at, Ticket.ticket_number)
+    ).all()
+    next_ticket = db.session.scalar(
+        waiting_query
+        .order_by(Ticket.created_at, Ticket.ticket_number)
+        .limit(1)
+    )
     services = all_services()
     return render_template(
-        "staff.html", queue=queue, services=services, selected=service_id
+        "staff.html",
+        queue=queue,
+        services=services,
+        selected=service_id,
+        next_ticket=next_ticket,
     )
+
+
+@app.post("/staff/call-next")
+def call_next():
+    service_id = request.form.get("service_id", type=int)
+    query = db.select(Ticket).where(Ticket.status == "waiting")
+    if service_id:
+        query = query.where(Ticket.service_id == service_id)
+    ticket = db.session.scalar(
+        query.order_by(Ticket.created_at, Ticket.ticket_number).limit(1)
+    )
+    if ticket is None:
+        flash("There are no waiting tickets to call.", "info")
+        return redirect(url_for("staff_dashboard", service_id=service_id))
+
+    ticket.status = "called"
+    ticket.called_at = func.now()
+    db.session.commit()
+    flash(f"Ticket #{ticket.ticket_number} called to the counter.", "info")
+    return redirect(url_for("staff_dashboard", service_id=service_id))
 
 
 STAFF_ACTIONS = {"call": "called", "serve": "served", "no-show": "no-show"}
@@ -210,27 +239,23 @@ def staff_action(ticket_id, action):
     new_status = STAFF_ACTIONS.get(action)
     if new_status is None:
         abort(404)
-    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
-    if t is None:
-        abort(404)
+    t = db.get_or_404(Ticket, ticket_id)
     t.status = new_status
     if new_status == "called":
         t.called_at = func.now()
     elif new_status == "served":
         t.served_at = func.now()
     db.session.commit()
-    flash(f"Ticket #{ticket_id} marked {new_status}.", "info")
+    flash(f"Ticket #{t.ticket_number} marked {new_status}.", "info")
     return redirect(url_for("staff_dashboard"))
 
 
 @app.post("/staff/tickets/<int:ticket_id>/delete")
 def delete_ticket(ticket_id):
-    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
-    if t is None:
-        abort(404)
+    t = db.get_or_404(Ticket, ticket_id)
     db.session.delete(t)  # hard delete: the row is gone for good
     db.session.commit()
-    flash(f"Ticket #{ticket_id} was deleted.", "warning")
+    flash(f"Ticket #{t.ticket_number} was deleted.", "warning")
     return redirect(url_for("staff_dashboard"))
 
 
@@ -263,12 +288,17 @@ def service_edit(service_id):
     s = db.session.get(Service, service_id)
     if s is None:
         abort(404)
-    s.name = request.form.get("name", "").strip()
-    s.code = request.form.get("code", "").strip()
-    s.is_active = request.form.get("is_active") == "on"
-    if not s.name or len(s.name) > 100 or not s.code or len(s.code) > 30:
-        flash("Enter a name (up to 100 characters) and a code (up to 30 characters).", "danger")
+    name = request.form.get("name", "").strip()
+    code = request.form.get("code", "").strip()
+    if not name or len(name) > 100 or not code or len(code) > 30:
+        flash(
+            "Enter a name (up to 100 characters) and a code (up to 30 characters).",
+            "danger",
+        )
         return redirect(url_for("services_list"))
+    s.name = name
+    s.code = code
+    s.is_active = request.form.get("is_active") == "on"
     try:
         db.session.commit()
         flash(f"Service \"{s.name}\" updated.", "success")
