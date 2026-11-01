@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Services · sPrint{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <h1 class="h3 mb-4">Manage Services</h1>
+
+  <!-- Create service form -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Add New Service</h5>
+      <form method="post" action="{{ url_for('service_create') }}">
+        <div class="row">
+          <div class="col-md-4">
+            <label for="name" class="form-label">Service Name</label>
+            <input type="text" class="form-control" id="name" name="name" required maxlength="100">
+          </div>
+          <div class="col-md-3">
+            <label for="code" class="form-label">Code</label>
+            <input type="text" class="form-control" id="code" name="code" required maxlength="30" placeholder="e.g., print_doc">
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary">Add Service</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Services list -->
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Name</th>
+          <th scope="col">Code</th>
+          <th scope="col">Active</th>
+          <th scope="col">Tickets</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in services %}
+        <tr>
+          <td>{{ s.id }}</td>
+          <td>{{ s.name }}</td>
+          <td><code>{{ s.code }}</code></td>
+          <td>
+            {% if s.is_active %}
+              <span class="badge bg-success">Active</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td>{{ s.tickets|length }}</td>
+          <td>
+            <div class="btn-group" role="group">
+              <form method="post" action="{{ url_for('service_edit', service_id=s.id) }}">
+                <label class="visually-hidden" for="service-name-{{ s.id }}">Service name</label>
+                <input id="service-name-{{ s.id }}" type="text" name="name" required maxlength="100"
+                       class="form-control form-control-sm mb-1" value="{{ s.name }}">
+                <label class="visually-hidden" for="service-code-{{ s.id }}">Service code</label>
+                <input id="service-code-{{ s.id }}" type="text" name="code" required maxlength="30"
+                       class="form-control form-control-sm mb-1" value="{{ s.code }}">
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" name="is_active"
+                         id="service-active-{{ s.id }}" {% if s.is_active %}checked{% endif %}>
+                  <label class="form-check-label small" for="service-active-{{ s.id }}">Active</label>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+              </form>
+
+              <form method="post" action="{{ url_for('service_delete', service_id=s.id) }}"
+                    class="d-inline"
+                    data-confirm="Delete service \"{{ s.name }}\"? This cannot be undone.">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        aria-label="Delete service {{ s.name }}">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-3">
+    <a href="{{ url_for('staff_dashboard') }}" class="btn btn-outline-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+{% endblock %}

@@ -4,7 +4,31 @@
 
 {% block content %}
 <div class="container-fluid">
-  <h1 class="h3 mb-4">sPrint Operator Dashboard</h1>
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <h1 class="h3 mb-0">sPrint Operator Dashboard</h1>
+
+    <div class="d-flex align-items-center gap-2">
+      <form method="post" action="{{ url_for('call_next') }}" class="m-0">
+        {% if selected %}
+          <input type="hidden" name="service_id" value="{{ selected }}">
+        {% endif %}
+        <button type="submit" class="btn btn-primary btn-lg px-4 py-3">
+          {% if next_ticket %}
+            📢 Call Next Job (Ticket #{{ next_ticket.ticket_number }})
+          {% else %}
+            📢 Call Next Job
+          {% endif %}
+        </button>
+      </form>
+      <a href="{{ url_for('services_list') }}"
+         class="btn btn-outline-secondary btn-lg"
+         aria-label="Manage services"
+         title="Manage services">
+        <span aria-hidden="true">⚙</span>
+        <span class="visually-hidden">Manage services</span>
+      </a>
+    </div>
+  </div>
 
   <!-- Service filter -->
   <form method="get" action="{{ url_for('staff_dashboard') }}" class="mb-4">
@@ -26,25 +50,12 @@
     </div>
   </form>
 
-  <!-- Call Next button -->
-  {% if queue %}
-  <div class="mb-3">
-    {% set next_ticket = queue | sort(attribute='number') | first %}
-    <form method="post" action="{{ url_for('staff_action', ticket_id=next_ticket.number, action='call') }}"
-          class="d-inline">
-      <button type="submit" class="btn btn-primary btn-lg">
-        📢 Call Next Job (Ticket #{{ next_ticket.number }})
-      </button>
-    </form>
-  </div>
-  {% endif %}
-
   <!-- Queue table -->
   <div class="table-responsive">
     <table class="table table-hover align-middle">
       <caption class="caption-top">
         {% if selected %}
-          Showing {{ queue | length }} ticket(s) for {{ names[selected] }}
+          Showing {{ queue | length }} ticket(s) for selected service
         {% else %}
           Showing all {{ queue | length }} ticket(s)
         {% endif %}
@@ -57,23 +68,25 @@
           <th scope="col">Document</th>
           <th scope="col">Pages</th>
           <th scope="col">Type</th>
+          <th scope="col">Paper</th>
           <th scope="col">Rush</th>
+          <th scope="col">Joined</th>
           <th scope="col">Status</th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% if queue %}
-          {% for t in queue | sort(attribute='number') %}
+          {% for t in queue %}
           <tr>
-            <td class="fw-semibold">{{ t.number }}</td>
+            <td class="fw-semibold">{{ t.ticket_number }}</td>
             <td>
               <div>{{ t.name }}</div>
               <small class="text-muted">{{ t.student_id }}</small>
               <br>
               <small class="text-muted">{{ t.email }}</small>
             </td>
-            <td>{{ names[t.service_id] }}</td>
+            <td>{{ t.service.name }}</td>
             <td>
               <small class="text-muted">
                 {% if t.sent_via == 'gmail' %}Gmail{% else %}FB{% endif %}:
@@ -94,6 +107,7 @@
                 <span class="text-muted">B&W</span>
               {% endif %}
             </td>
+            <td>{{ t.paper_size | upper }}</td>
             <td>
               {% if t.is_rush %}
                 <span class="badge bg-danger">★</span>
@@ -101,11 +115,15 @@
                 <span class="text-muted">—</span>
               {% endif %}
             </td>
+            <td class="text-muted small">{{ t.created_at|local }}</td>
             <td>
               <span class="badge rounded-pill
-                {% if t.status == 'called' %}bg-warning text-dark
-                {% elif t.status == 'served' %}bg-success
+                {% if t.status == 'waiting' %}bg-warning text-dark
+                {% elif t.status == 'called' %}bg-success
+                {% elif t.status == 'served' %}bg-primary
                 {% elif t.status == 'no-show' %}bg-danger
+                {% elif t.status == 'unreadable' %}bg-status-unreadable
+                {% elif t.status == 'left' %}bg-secondary
                 {% else %}bg-secondary{% endif %}">
                 {{ t.status | replace('_', ' ') | capitalize }}
               </span>
@@ -113,41 +131,50 @@
             <td>
               <div class="btn-group" role="group">
                 {% if t.status == 'waiting' %}
-                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='call') }}"
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.id, action='call') }}"
                       class="d-inline">
                   <button type="submit" class="btn btn-sm btn-primary"
-                          aria-label="Call ticket {{ t.number }}">
+                          aria-label="Call ticket {{ t.ticket_number }}">
                     Call
                   </button>
                 </form>
                 {% endif %}
 
                 {% if t.status == 'called' %}
-                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='serve') }}"
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.id, action='serve') }}"
                       class="d-inline">
                   <button type="submit" class="btn btn-sm btn-success"
-                          aria-label="Mark ticket {{ t.number }} as served">
+                          aria-label="Mark ticket {{ t.ticket_number }} as served">
                     Serve
                   </button>
                 </form>
                 {% endif %}
 
                 {% if t.status in ('waiting', 'called') %}
-                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='no-show') }}"
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.id, action='no-show') }}"
                       class="d-inline">
                   <button type="submit" class="btn btn-sm btn-outline-danger"
-                          aria-label="Mark ticket {{ t.number }} as no-show">
+                          aria-label="Mark ticket {{ t.ticket_number }} as no-show">
                     No-show
                   </button>
                 </form>
                 {% endif %}
+
+                <form method="post" action="{{ url_for('delete_ticket', ticket_id=t.id) }}"
+                      class="d-inline"
+                      data-confirm="Delete ticket {{ t.ticket_number }}? This cannot be undone.">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary"
+                          aria-label="Delete ticket {{ t.ticket_number }}">
+                    Delete
+                  </button>
+                </form>
               </div>
             </td>
           </tr>
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="9" class="text-center text-muted py-5">
+            <td colspan="11" class="text-center text-muted py-5">
               <p class="mb-0">No tickets in the queue.</p>
             </td>
           </tr>
@@ -165,4 +192,3 @@
   </div>
 </div>
 {% endblock %}
-

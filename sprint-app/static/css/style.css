@@ -226,14 +226,14 @@ main {
   ════════════════════════════════════════════════════════════════════════════
 */
 
-/*
-  The "called" status uses Bootstrap's .bg-warning which now maps to our
-  --sprint-warning (#E8A022).  We ensure dark text on that yellow background
-  for legibility (light yellow on white is dangerously low contrast).
-  Bootstrap sets text-dark on bg-warning by default in v5.3 — this confirms it.
-*/
+/* Waiting is yellow; dark text keeps its label readable against the background. */
 .badge.bg-warning {
   color: var(--sprint-dark) !important;
+}
+
+.badge.bg-status-unreadable {
+  color: #fff;
+  background-color: #6f42c1;
 }
 
 

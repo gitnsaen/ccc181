@@ -65,14 +65,10 @@
   <h2 class="h5 mb-3">Current Queue</h2>
 
   <!--
-    tickets is passed from the index() route in app.py.
-    We filter to only show "waiting" and "called" tickets in the count sentence
-    using Jinja's selectattr filter:
-      selectattr("status", "in", ...) keeps dicts where ticket["status"] is in the list
-    | list  → convert the filter result to a list so we can call | length
-    | length → count the items
+    tickets is passed from the index() route in app.py as a list of Ticket objects.
+    The route already filters to only show "waiting" and "called" tickets.
   -->
-  {% set active = tickets | selectattr("status", "in", ["waiting", "called"]) | list %}
+  {% set active = tickets %}
 
   <p class="text-muted">
     <!--
@@ -109,7 +105,7 @@
               fw-semibold → Bootstrap 5.3 utility for font-weight: 600
               We show the ticket number first — it's the primary identifier.
             -->
-            <span class="fw-semibold">#{{ t.number }}</span>
+            <span class="fw-semibold">#{{ t.ticket_number }}</span>
             {{ t.name }}
           </span>
 
@@ -118,16 +114,21 @@
             badge          → small pill / inline label
             rounded-pill   → fully rounded corners
             bg-* colour mapped from status:
-              called  → bg-warning (yellow  — "your turn soon")
-              waiting → bg-secondary (grey   — "in line")
-              done    → bg-success   (green  — "finished")
+                waiting → bg-warning (yellow — "in line")
+                called  → bg-success (green — "your turn")
+                served  → bg-primary (blue — "finished")
+                no-show → bg-danger (red)
+                left    → bg-secondary (grey)
+                unreadable → purple
             We always include a text label INSIDE the badge, not just
             the colour, so colour-blind users still get the information.
           -->
           <span class="badge rounded-pill
-            {% if t.status == 'called' %}bg-warning text-dark
-            {% elif t.status == 'served' %}bg-success
+            {% if t.status == 'waiting' %}bg-warning text-dark
+            {% elif t.status == 'called' %}bg-success
+            {% elif t.status == 'served' %}bg-primary
             {% elif t.status == 'no-show' %}bg-danger
+            {% elif t.status == 'unreadable' %}bg-status-unreadable
             {% else %}bg-secondary{% endif %}">
             {{ t.status | capitalize }}
           </span>
