@@ -19,73 +19,26 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 
-# Temporary in-memory baseline data stores (retained for existing routes until Part 7)
-SERVICES = [
-    {"id": 1, "name": "Document Printing (B&W / Color)"},
-    {"id": 2, "name": "Thesis & Manuscript Binding"},
-    {"id": 3, "name": "Large Format Poster & Plan Plotting"},
-    {"id": 4, "name": "Scanning & Photocopying"},
-]
-
-TICKETS = [
-    {
-        "number": 1,
-        "name": "Carlos Garcia",
-        "email": "carlos.garcia@campus.edu",
-        "student_id": "2023-14022",
-        "service_id": 1,
-        "sent_via": "gmail",
-        "doc_name": "Ethics_CaseStudy_Group4.pdf",
-        "pages": 12,
-        "pages_type": "all",
-        "pages_range": None,
-        "print_type": "bw",
-        "is_rush": False,
-        "status": "called",
-    },
-    {
-        "number": 2,
-        "name": "Janelle Diaz",
-        "email": "jdiaz@campus.edu",
-        "student_id": "2022-09411",
-        "service_id": 1,
-        "sent_via": "fb",
-        "doc_name": "Architecture_Design_Brief.pdf",
-        "pages": 45,
-        "pages_type": "all",
-        "pages_range": None,
-        "print_type": "color",
-        "is_rush": True,
-        "status": "waiting",
-    },
-    {
-        "number": 3,
-        "name": "Marcus Lim",
-        "email": "mlim@campus.edu",
-        "student_id": "2024-31002",
-        "service_id": 2,
-        "sent_via": "gmail",
-        "doc_name": "CapStone_Final_Hardbound.pdf",
-        "pages": 120,
-        "pages_type": "all",
-        "pages_range": None,
-        "print_type": "bw",
-        "is_rush": False,
-        "status": "waiting",
-    },
-]
+# Helper: all active services
+def all_services():
+    return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
 
 
 # Home route
 @app.route("/")
 def index():
-    return render_template("index.html", tickets=TICKETS)
+    tickets = db.session.scalars(
+        db.select(Ticket)
+        .where(Ticket.status.in_(["waiting", "called"]))
+        .order_by(Ticket.created_at)
+    ).all()
+    return render_template("index.html", tickets=tickets)
 
 
 # Join queue routes
 @app.get("/join")
 def join_form():
-    return render_template("join.html", services=SERVICES, form={})
+    return render_template("join.html", services=all_services(), form={})
 
 
 @app.post("/join")
@@ -103,15 +56,19 @@ def join():
     print_type = form.get("print_type", "").strip()
     is_rush = form.get("is_rush") == "on"
 
+    service = db.session.get(Service, service_id) if service_id else None
+
     errors = {}
-    if not name:
-        errors["name"] = "Enter your name."
-    if "@" not in email:
+    if not name or len(name) > 100:
+        errors["name"] = "Enter your name (up to 100 characters)."
+    if "@" not in email or len(email) > 255:
         errors["email"] = "Enter a valid email address."
-    if not student_id:
-        errors["student_id"] = "Enter your student ID."
-    if service_id not in [s["id"] for s in SERVICES]:
+    if not student_id or len(student_id) > 20:
+        errors["student_id"] = "Enter your student ID (up to 20 characters)."
+    if service is None:
         errors["service_id"] = "Choose a service."
+    if sent_via not in ("gmail", "fb"):
+        errors["sent_via"] = "Choose how you sent the file (Gmail or FB)."
     if not doc_name:
         errors["doc_name"] = "Enter the document or file reference (e.g., file name sent via FB/Gmail)."
 
@@ -131,81 +88,108 @@ def join():
 
     if errors:
         flash("Please fix the highlighted fields.", "danger")
-        return render_template("join.html", services=SERVICES, form=form, errors=errors), 400
+        return render_template("join.html", services=all_services(), form=form, errors=errors), 400
 
-    number = TICKETS[-1]["number"] + 1 if TICKETS else 1
-    TICKETS.append({
-        "number": number,
-        "name": name,
-        "email": email,
-        "student_id": student_id,
-        "service_id": service_id,
-        "sent_via": sent_via,
-        "doc_name": doc_name,
-        "pages": pages,
-        "pages_type": pages_type,
-        "pages_range": pages_range if pages_type == "specific" else None,
-        "print_type": print_type,
-        "is_rush": is_rush,
-        "status": "waiting",
-    })
-    flash(f"You joined the queue. Your ticket is #{number}.", "success")
-    return redirect(url_for("ticket", ticket_id=number))
+    # Allocate next ticket number (monotonic)
+    max_number = db.session.scalar(db.select(func.max(Ticket.ticket_number)))
+    ticket_number = (max_number + 1) if max_number is not None else 1
+
+    ticket = Ticket(
+        ticket_number=ticket_number,
+        name=name,
+        email=email,
+        student_id=student_id,
+        service=service,
+        sent_via=sent_via,
+        doc_name=doc_name,
+        pages=pages,
+        pages_type=pages_type,
+        pages_range=pages_range if pages_type == "specific" else None,
+        print_type=print_type,
+        paper_size="letter",  # Default, can be enhanced later
+        is_rush=is_rush,
+        status="waiting",
+    )
+    db.session.add(ticket)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        flash("Something went wrong saving your ticket. Please try again.", "danger")
+        return render_template("join.html", services=all_services(), form=form, errors={}), 409
+
+    flash(f"You joined the queue. Your ticket is #{ticket.ticket_number}.", "success")
+    return redirect(url_for("ticket", ticket_id=ticket.ticket_number))
 
 
 # Student ticket views
 @app.route("/queue/<int:ticket_id>")
 def ticket(ticket_id):
-    t = next((t for t in TICKETS if t["number"] == ticket_id), None)
+    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
     if t is None:
         abort(404)
 
-    ahead = [x for x in TICKETS if x["status"] == "waiting" and x["number"] < t["number"]]
-    service = next(s for s in SERVICES if s["id"] == t["service_id"])
-    return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
+    # Calculate people ahead (temporary - will be improved in Part 8)
+    ahead = db.session.scalar(
+        db.select(func.count())
+        .select_from(Ticket)
+        .where(Ticket.status == "waiting", Ticket.ticket_number < t.ticket_number)
+    )
+    return render_template("ticket.html", ticket=t, service=t.service, ahead=ahead)
 
 
 @app.post("/queue/<int:ticket_id>/leave")
 def leave_queue(ticket_id):
-    t = next((t for t in TICKETS if t["number"] == ticket_id), None)
+    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
     if t is None:
         abort(404)
 
-    t["status"] = "no-show"
+    t.status = "no-show"
+    db.session.commit()
     flash(f"Ticket #{ticket_id} has been removed from the queue.", "info")
     return redirect(url_for("index"))
 
 
 @app.get("/queue/<int:ticket_id>/status.json")
 def ticket_status(ticket_id):
-    t = next((t for t in TICKETS if t["number"] == ticket_id), None)
+    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
     if t is None:
         abort(404)
 
-    ahead = sum(1 for x in TICKETS if x["status"] == "waiting" and x["number"] < t["number"])
-    return {"status": t["status"], "ahead": ahead}
+    ahead = db.session.scalar(
+        db.select(func.count())
+        .select_from(Ticket)
+        .where(Ticket.status == "waiting", Ticket.ticket_number < t.ticket_number)
+    )
+    return {"status": t.status, "ahead": ahead}
 
 
 # Staff dashboard views
 @app.get("/staff")
 def staff_dashboard():
     service_id = request.args.get("service_id", type=int)
-    queue = [t for t in TICKETS if t["status"] in ("waiting", "called")]
+    query = db.select(Ticket).where(Ticket.status.in_(["waiting", "called"]))
     if service_id:
-        queue = [t for t in queue if t["service_id"] == service_id]
-    names = {s["id"]: s["name"] for s in SERVICES}
+        query = query.where(Ticket.service_id == service_id)
+    queue = db.session.scalars(query.order_by(Ticket.created_at)).all()
+    services = all_services()
     return render_template(
-        "staff.html", queue=queue, services=SERVICES, names=names, selected=service_id
+        "staff.html", queue=queue, services=services, selected=service_id
     )
 
 
 @app.post("/staff/tickets/<int:ticket_id>/<action>")
 def staff_action(ticket_id, action):
     new_status = {"call": "called", "serve": "served", "no-show": "no-show"}.get(action)
-    t = next((t for t in TICKETS if t["number"] == ticket_id), None)
+    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
     if t is None or new_status is None:
         abort(404)
-    t["status"] = new_status
+    t.status = new_status
+    if new_status == "called":
+        t.called_at = func.now()
+    elif new_status == "served":
+        t.served_at = func.now()
+    db.session.commit()
     flash(f"Ticket #{ticket_id} marked {new_status}.", "info")
     return redirect(url_for("staff_dashboard"))
 

@@ -29,11 +29,11 @@
   <!-- Call Next button -->
   {% if queue %}
   <div class="mb-3">
-    {% set next_ticket = queue | sort(attribute='number') | first %}
-    <form method="post" action="{{ url_for('staff_action', ticket_id=next_ticket.number, action='call') }}"
+    {% set next_ticket = queue | sort(attribute='ticket_number') | first %}
+    <form method="post" action="{{ url_for('staff_action', ticket_id=next_ticket.ticket_number, action='call') }}"
           class="d-inline">
       <button type="submit" class="btn btn-primary btn-lg">
-        📢 Call Next Job (Ticket #{{ next_ticket.number }})
+        📢 Call Next Job (Ticket #{{ next_ticket.ticket_number }})
       </button>
     </form>
   </div>
@@ -44,7 +44,7 @@
     <table class="table table-hover align-middle">
       <caption class="caption-top">
         {% if selected %}
-          Showing {{ queue | length }} ticket(s) for {{ names[selected] }}
+          Showing {{ queue | length }} ticket(s) for selected service
         {% else %}
           Showing all {{ queue | length }} ticket(s)
         {% endif %}
@@ -64,16 +64,16 @@
       </thead>
       <tbody>
         {% if queue %}
-          {% for t in queue | sort(attribute='number') %}
+          {% for t in queue | sort(attribute='ticket_number') %}
           <tr>
-            <td class="fw-semibold">{{ t.number }}</td>
+            <td class="fw-semibold">{{ t.ticket_number }}</td>
             <td>
               <div>{{ t.name }}</div>
               <small class="text-muted">{{ t.student_id }}</small>
               <br>
               <small class="text-muted">{{ t.email }}</small>
             </td>
-            <td>{{ names[t.service_id] }}</td>
+            <td>{{ t.service.name }}</td>
             <td>
               <small class="text-muted">
                 {% if t.sent_via == 'gmail' %}Gmail{% else %}FB{% endif %}:
@@ -113,30 +113,30 @@
             <td>
               <div class="btn-group" role="group">
                 {% if t.status == 'waiting' %}
-                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='call') }}"
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.ticket_number, action='call') }}"
                       class="d-inline">
                   <button type="submit" class="btn btn-sm btn-primary"
-                          aria-label="Call ticket {{ t.number }}">
+                          aria-label="Call ticket {{ t.ticket_number }}">
                     Call
                   </button>
                 </form>
                 {% endif %}
 
                 {% if t.status == 'called' %}
-                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='serve') }}"
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.ticket_number, action='serve') }}"
                       class="d-inline">
                   <button type="submit" class="btn btn-sm btn-success"
-                          aria-label="Mark ticket {{ t.number }} as served">
+                          aria-label="Mark ticket {{ t.ticket_number }} as served">
                     Serve
                   </button>
                 </form>
                 {% endif %}
 
                 {% if t.status in ('waiting', 'called') %}
-                <form method="post" action="{{ url_for('staff_action', ticket_id=t.number, action='no-show') }}"
+                <form method="post" action="{{ url_for('staff_action', ticket_id=t.ticket_number, action='no-show') }}"
                       class="d-inline">
                   <button type="submit" class="btn btn-sm btn-outline-danger"
-                          aria-label="Mark ticket {{ t.number }} as no-show">
+                          aria-label="Mark ticket {{ t.ticket_number }} as no-show">
                     No-show
                   </button>
                 </form>

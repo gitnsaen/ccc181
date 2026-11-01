@@ -65,14 +65,10 @@
   <h2 class="h5 mb-3">Current Queue</h2>
 
   <!--
-    tickets is passed from the index() route in app.py.
-    We filter to only show "waiting" and "called" tickets in the count sentence
-    using Jinja's selectattr filter:
-      selectattr("status", "in", ...) keeps dicts where ticket["status"] is in the list
-    | list  → convert the filter result to a list so we can call | length
-    | length → count the items
+    tickets is passed from the index() route in app.py as a list of Ticket objects.
+    The route already filters to only show "waiting" and "called" tickets.
   -->
-  {% set active = tickets | selectattr("status", "in", ["waiting", "called"]) | list %}
+  {% set active = tickets %}
 
   <p class="text-muted">
     <!--
@@ -109,7 +105,7 @@
               fw-semibold → Bootstrap 5.3 utility for font-weight: 600
               We show the ticket number first — it's the primary identifier.
             -->
-            <span class="fw-semibold">#{{ t.number }}</span>
+            <span class="fw-semibold">#{{ t.ticket_number }}</span>
             {{ t.name }}
           </span>
 
