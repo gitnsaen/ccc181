@@ -24,8 +24,8 @@
 | **FR-10** | An operator can call the next waiting ticket for a service to the counter. | Must | **Yes** | Built (Week 3) |
 | **FR-11** | An operator can mark a called ticket as served upon payment or as a no-show if absent. | Must | **Yes** | Built (Week 3) |
 | **FR-12 ★** | An operator can flag a customer's document reference as "Unreadable" or "Missing File", notifying the student to re-send. | Should | **Yes** | Later |
-| **FR-13 ★** | A student can receive an audio chime and phone vibration alert when their ticket status changes to "Called", allowing them to wait without staring at their screen. | Should | No | This week |
-| **FR-14** | An operator can manage services by adding, renaming, or deactivating a service when equipment or supplies are temporarily unavailable. | Must | **Yes** | This week |
+| **FR-13 ★** | A student can receive an audio chime and phone vibration alert when their ticket status changes to "Called", allowing them to wait without staring at their screen. | Should | No | Later |
+| **FR-14** | An operator can manage services by adding, renaming, or deactivating a service when equipment or supplies are temporarily unavailable. | Must | **Yes** | Built (Week 4) |
 | **FR-15 ★** | A student can see an estimated wait time and estimated print cost calculated from their page count and color rate. | Could | No | Later |
 
 > **★** indicates requirements specific to the campus copy center setting (document channel references, custom print parameters, rush priority tags, unreadable file flags, and mobile call alerts).
