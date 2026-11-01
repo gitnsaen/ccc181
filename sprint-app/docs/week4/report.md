@@ -9,7 +9,7 @@
 - **Section:** CS3B
 - **Date:** 2026-11-01
 - **Branch:** `feature/week4-database`
-- **Pull request:** Not created yet. Add the PR link here after opening it.
+- **Pull request:** https://github.com/gitnsaen/ccc181/pull/9
 - **Issue:** #7
 
 ## Requirements
