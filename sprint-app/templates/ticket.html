@@ -51,6 +51,10 @@
               <td>{{ service.name }}</td>
             </tr>
             <tr>
+              <td class="text-muted">Joined</td>
+              <td class="text-muted small">{{ ticket.created_at|local }}</td>
+            </tr>
+            <tr>
               <td class="text-muted">Sent via</td>
               <td>{{ "Gmail" if ticket.sent_via == 'gmail' else 'FB Page message' }}</td>
             </tr>

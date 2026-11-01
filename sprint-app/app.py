@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta, timezone
 
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
@@ -10,6 +11,9 @@ from models import Service, Operator, Ticket, db
 
 load_dotenv()
 
+# Philippine time zone (UTC+8, no daylight saving)
+PH_TIME = timezone(timedelta(hours=8))
+
 app = Flask(__name__)
 app.secret_key = "sprint_dev_flask_secret_key_8d1ee41d"
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
@@ -17,6 +21,29 @@ app.config["SQLALCHEMY_ECHO"] = os.environ.get("SQLALCHEMY_ECHO") == "1"
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
+
+# Helper: all active services
+def all_services():
+    return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
+
+
+# Helper: position in line
+def people_ahead(t):
+    """Count tickets still waiting for the same service that joined before t."""
+    stmt = (db.select(func.count())
+            .select_from(Ticket)
+            .where(Ticket.service_id == t.service_id,
+                   Ticket.status == "waiting",
+                   Ticket.created_at < t.created_at))
+    return db.session.scalar(stmt)
+
+
+# Template filter: local time (Philippine time UTC+8)
+@app.template_filter("local")
+def local_time(value):
+    """Show a database time in Philippine time, e.g. Oct 26, 08:01 AM."""
+    return value.astimezone(PH_TIME).strftime("%b %d, %I:%M %p") if value else ""
 
 
 # Helper: all active services
@@ -129,13 +156,7 @@ def ticket(ticket_id):
     if t is None:
         abort(404)
 
-    # Calculate people ahead (temporary - will be improved in Part 8)
-    ahead = db.session.scalar(
-        db.select(func.count())
-        .select_from(Ticket)
-        .where(Ticket.status == "waiting", Ticket.ticket_number < t.ticket_number)
-    )
-    return render_template("ticket.html", ticket=t, service=t.service, ahead=ahead)
+    return render_template("ticket.html", ticket=t, service=t.service, ahead=people_ahead(t))
 
 
 @app.post("/queue/<int:ticket_id>/leave")
@@ -156,12 +177,7 @@ def ticket_status(ticket_id):
     if t is None:
         abort(404)
 
-    ahead = db.session.scalar(
-        db.select(func.count())
-        .select_from(Ticket)
-        .where(Ticket.status == "waiting", Ticket.ticket_number < t.ticket_number)
-    )
-    return {"status": t.status, "ahead": ahead}
+    return {"status": t.status, "ahead": people_ahead(t)}
 
 
 # Staff dashboard views
