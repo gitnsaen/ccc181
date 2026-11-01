@@ -40,7 +40,7 @@ class Ticket(db.Model):
         CheckConstraint("print_type IN ('bw', 'color')", name="check_ticket_print_type"),
         CheckConstraint("paper_size IN ('letter', 'a4', 'legal')", name="check_ticket_paper_size"),
         CheckConstraint(
-            "status IN ('waiting', 'called', 'served', 'no-show', 'unreadable')",
+            "status IN ('waiting', 'called', 'served', 'no-show', 'unreadable', 'left')",
             name="check_ticket_status",
         ),
     )

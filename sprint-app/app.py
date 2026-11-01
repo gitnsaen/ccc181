@@ -28,6 +28,11 @@ def all_services():
     return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
 
 
+# Helper: active services for join form (same as all_services for sPrint)
+def active_services():
+    return db.session.scalars(db.select(Service).where(Service.is_active == True).order_by(Service.name)).all()
+
+
 # Helper: position in line
 def people_ahead(t):
     """Count tickets still waiting for the same service that joined before t."""
@@ -65,7 +70,7 @@ def index():
 # Join queue routes
 @app.get("/join")
 def join_form():
-    return render_template("join.html", services=all_services(), form={})
+    return render_template("join.html", services=active_services(), form={})
 
 
 @app.post("/join")
@@ -86,6 +91,8 @@ def join():
     service = db.session.get(Service, service_id) if service_id else None
 
     errors = {}
+    if service is None or not service.is_active:
+        errors["service_id"] = "Choose a service."
     if not name or len(name) > 100:
         errors["name"] = "Enter your name (up to 100 characters)."
     if "@" not in email or len(email) > 255:
@@ -115,7 +122,7 @@ def join():
 
     if errors:
         flash("Please fix the highlighted fields.", "danger")
-        return render_template("join.html", services=all_services(), form=form, errors=errors), 400
+        return render_template("join.html", services=active_services(), form=form, errors=errors), 400
 
     # Allocate next ticket number (monotonic)
     max_number = db.session.scalar(db.select(func.max(Ticket.ticket_number)))
@@ -165,9 +172,10 @@ def leave_queue(ticket_id):
     if t is None:
         abort(404)
 
-    t.status = "no-show"
-    db.session.commit()
-    flash(f"Ticket #{ticket_id} has been removed from the queue.", "info")
+    if t.status == "waiting":
+        t.status = "left"  # soft delete: row stays for reports
+        db.session.commit()
+    flash("You left the queue.", "info")
     return redirect(url_for("index"))
 
 
@@ -194,11 +202,16 @@ def staff_dashboard():
     )
 
 
+STAFF_ACTIONS = {"call": "called", "serve": "served", "no-show": "no-show"}
+
+
 @app.post("/staff/tickets/<int:ticket_id>/<action>")
 def staff_action(ticket_id, action):
-    new_status = {"call": "called", "serve": "served", "no-show": "no-show"}.get(action)
+    new_status = STAFF_ACTIONS.get(action)
+    if new_status is None:
+        abort(404)
     t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
-    if t is None or new_status is None:
+    if t is None:
         abort(404)
     t.status = new_status
     if new_status == "called":
@@ -208,6 +221,75 @@ def staff_action(ticket_id, action):
     db.session.commit()
     flash(f"Ticket #{ticket_id} marked {new_status}.", "info")
     return redirect(url_for("staff_dashboard"))
+
+
+@app.post("/staff/tickets/<int:ticket_id>/delete")
+def delete_ticket(ticket_id):
+    t = db.session.scalar(db.select(Ticket).where(Ticket.ticket_number == ticket_id))
+    if t is None:
+        abort(404)
+    db.session.delete(t)  # hard delete: the row is gone for good
+    db.session.commit()
+    flash(f"Ticket #{ticket_id} was deleted.", "warning")
+    return redirect(url_for("staff_dashboard"))
+
+
+# Services management routes
+@app.get("/staff/services")
+def services_list():
+    services = db.session.scalars(db.select(Service).order_by(Service.name)).all()
+    return render_template("services.html", services=services)
+
+
+@app.post("/staff/services")
+def service_create():
+    name = request.form.get("name", "").strip()
+    code = request.form.get("code", "").strip()
+    if not name or len(name) > 100 or not code or len(code) > 30:
+        flash("Enter a name (up to 100 characters) and a code (up to 30 characters).", "danger")
+        return redirect(url_for("services_list"))
+    db.session.add(Service(name=name, code=code))
+    try:
+        db.session.commit()
+        flash(f"Service \"{name}\" added.", "success")
+    except IntegrityError:
+        db.session.rollback()
+        flash(f"A service with this name or code already exists.", "danger")
+    return redirect(url_for("services_list"))
+
+
+@app.post("/staff/services/<int:service_id>/edit")
+def service_edit(service_id):
+    s = db.session.get(Service, service_id)
+    if s is None:
+        abort(404)
+    s.name = request.form.get("name", "").strip()
+    s.code = request.form.get("code", "").strip()
+    s.is_active = request.form.get("is_active") == "on"
+    if not s.name or len(s.name) > 100 or not s.code or len(s.code) > 30:
+        flash("Enter a name (up to 100 characters) and a code (up to 30 characters).", "danger")
+        return redirect(url_for("services_list"))
+    try:
+        db.session.commit()
+        flash(f"Service \"{s.name}\" updated.", "success")
+    except IntegrityError:
+        db.session.rollback()
+        flash(f"A service with this name or code already exists.", "danger")
+    return redirect(url_for("services_list"))
+
+
+@app.post("/staff/services/<int:service_id>/delete")
+def service_delete(service_id):
+    s = db.session.get(Service, service_id)
+    if s is None:
+        abort(404)
+    if s.tickets:
+        flash(f"\"{s.name}\" has tickets, so it cannot be deleted. Turn it off instead.", "danger")
+        return redirect(url_for("services_list"))
+    db.session.delete(s)
+    db.session.commit()
+    flash(f"Service \"{s.name}\" deleted.", "warning")
+    return redirect(url_for("services_list"))
 
 
 @app.cli.command("seed")

@@ -16,6 +16,7 @@
             {% if ticket.status == 'called' %}bg-warning text-dark
             {% elif ticket.status == 'served' %}bg-success
             {% elif ticket.status == 'no-show' %}bg-danger
+            {% elif ticket.status == 'left' %}bg-secondary
             {% else %}bg-secondary{% endif %}">
             {{ ticket.status | replace('_', ' ') | capitalize }}
           </span>
